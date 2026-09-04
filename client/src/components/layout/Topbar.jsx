@@ -1,0 +1,232 @@
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Search, Bell, Menu, Plus, Command, Sun, Moon, Laptop, Check, User, Settings, LogOut } from 'lucide-react';
+import { Dropdown, DropdownItem, DropdownSeparator, DropdownLabel } from '../ui/Dropdown';
+import { Button } from '../ui/Button';
+import { CommandPalette } from './CommandPalette';
+import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useToast } from '../ui/Toast';
+
+export const Topbar = ({ onMenuClick, onQuickAddClick }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { addToast } = useToast();
+  const { user, initials, logout } = useAuth();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Global Cmd+K / Ctrl+K listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Route titles mapping
+  const routeTitles = {
+    '/app/dashboard': { title: 'Dashboard', context: 'Overview' },
+    '/app/purchases': { title: 'Purchases', context: 'Post-Purchase' },
+    '/app/returns': { title: 'Returns', context: 'Post-Purchase' },
+    '/app/refunds': { title: 'Refunds', context: 'Post-Purchase' },
+    '/app/warranties': { title: 'Warranties', context: 'Post-Purchase' },
+    '/app/documents': { title: 'Documents', context: 'Post-Purchase' },
+    '/app/analytics': { title: 'Analytics', context: 'Insights' },
+    '/app/settings': { title: 'Settings', context: 'System' },
+  };
+
+  const currentMeta = routeTitles[location.pathname] || { title: 'Overview', context: 'AfterBuy' };
+
+  return (
+    <>
+      <CommandPalette isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+      <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b border-slate-200/80 dark:border-[#22262F] bg-white/95 dark:bg-[#11141A]/95 backdrop-blur-sm px-4 sm:px-6 lg:px-8 transition-colors duration-200">
+        {/* Left side: Hamburger (mobile) + Breadcrumb Context */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onMenuClick}
+            className="lg:hidden -ml-1 p-2 rounded-lg text-slate-500 dark:text-[#A9B0BC] hover:text-slate-800 dark:hover:text-[#F5F7FA] hover:bg-slate-100 dark:hover:bg-[#1C2028] transition-colors"
+            aria-label="Open sidebar"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-slate-400 dark:text-[#747C89] font-medium hidden sm:inline">
+              {currentMeta.context}
+            </span>
+            <span className="text-slate-300 dark:text-[#292E38] hidden sm:inline">/</span>
+            <h1 className="text-sm font-semibold text-slate-900 dark:text-[#F5F7FA] tracking-tight">
+              {currentMeta.title}
+            </h1>
+          </div>
+        </div>
+
+        {/* Right side: Search trigger, Quick Action, Theme Switcher, Notifications, User Avatar */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Search trigger with shortcut badge */}
+          <button
+            type="button"
+            className="flex items-center gap-1.5 sm:gap-2 rounded-lg border border-slate-200 dark:border-[#292E38] bg-slate-50/70 dark:bg-[#171A21] hover:bg-slate-100/70 dark:hover:bg-[#1C2028] hover:border-slate-300 dark:hover:border-[#383F4D] px-2 sm:px-3 py-1.5 text-xs text-slate-500 dark:text-[#A9B0BC] transition-colors shrink-0 cursor-pointer"
+            onClick={() => setSearchOpen(true)}
+            aria-label="Search orders"
+          >
+            <Search className="w-3.5 h-3.5 text-slate-400 dark:text-[#747C89]" />
+            <span className="hidden md:inline">Search orders, items...</span>
+            <span className="md:hidden">Search...</span>
+            <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-slate-200 dark:border-[#292E38] bg-white dark:bg-[#11141A] px-1.5 py-0.5 text-[10px] font-medium text-slate-400 dark:text-[#747C89]">
+              ⌘K
+            </kbd>
+          </button>
+
+          {/* Quick Action: Add Purchase */}
+          <Button
+            variant="primary"
+            size="small"
+            icon={Plus}
+            onClick={onQuickAddClick}
+            className="shadow-xs text-xs px-2.5 sm:px-3 py-1.5 whitespace-nowrap"
+          >
+            <span className="hidden sm:inline">Add Purchase</span>
+            <span className="sm:hidden">Add</span>
+          </Button>
+
+          {/* Appearance Switcher */}
+          <Dropdown
+            align="right"
+            trigger={
+              <button
+                type="button"
+                className="p-1.5 sm:p-2 rounded-lg text-slate-500 dark:text-[#A9B0BC] hover:text-slate-800 dark:hover:text-[#F5F7FA] hover:bg-slate-100 dark:hover:bg-[#1C2028] transition-colors cursor-pointer"
+                aria-label="Toggle theme"
+                title={`Current theme: ${theme}`}
+              >
+                {resolvedTheme === 'dark' ? (
+                  <Moon className="w-4 h-4 text-blue-400" />
+                ) : (
+                  <Sun className="w-4 h-4 text-amber-500" />
+                )}
+              </button>
+            }
+          >
+            <DropdownLabel>Appearance</DropdownLabel>
+            <DropdownItem
+              icon={Sun}
+              onClick={() => setTheme('light')}
+              className={theme === 'light' ? 'text-blue-600 dark:text-blue-400 font-semibold' : ''}
+            >
+              <div className="flex items-center justify-between w-full">
+                <span>Light</span>
+                {theme === 'light' && <Check className="w-3.5 h-3.5" />}
+              </div>
+            </DropdownItem>
+            <DropdownItem
+              icon={Moon}
+              onClick={() => setTheme('dark')}
+              className={theme === 'dark' ? 'text-blue-600 dark:text-blue-400 font-semibold' : ''}
+            >
+              <div className="flex items-center justify-between w-full">
+                <span>Dark</span>
+                {theme === 'dark' && <Check className="w-3.5 h-3.5" />}
+              </div>
+            </DropdownItem>
+            <DropdownItem
+              icon={Laptop}
+              onClick={() => setTheme('system')}
+              className={theme === 'system' ? 'text-blue-600 dark:text-blue-400 font-semibold' : ''}
+            >
+              <div className="flex items-center justify-between w-full">
+                <span>System</span>
+                {theme === 'system' && <Check className="w-3.5 h-3.5" />}
+              </div>
+            </DropdownItem>
+          </Dropdown>
+
+          {/* Notifications Dropdown */}
+          <Dropdown
+            align="right"
+            trigger={
+              <button
+                type="button"
+                className="relative p-2 rounded-lg text-slate-500 dark:text-[#A9B0BC] hover:text-slate-800 dark:hover:text-[#F5F7FA] hover:bg-slate-100 dark:hover:bg-[#1C2028] transition-colors"
+                aria-label="Notifications"
+              >
+                <Bell className="w-4 h-4" />
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white dark:ring-[#11141A]" />
+              </button>
+            }
+          >
+            <DropdownLabel>Notifications (2 new)</DropdownLabel>
+            <DropdownItem onClick={() => navigate('/app/returns')}>
+              <div className="flex flex-col gap-0.5 text-left py-0.5">
+                <span className="font-semibold text-slate-800 dark:text-[#F5F7FA]">Return window ends tomorrow</span>
+                <span className="text-[11px] text-slate-500 dark:text-[#747C89]">Sony WH-1000XM4 Headphones</span>
+              </div>
+            </DropdownItem>
+            <DropdownItem onClick={() => navigate('/app/refunds')}>
+              <div className="flex flex-col gap-0.5 text-left py-0.5">
+                <span className="font-semibold text-slate-800 dark:text-[#F5F7FA]">Refund overdue by 2 days</span>
+                <span className="text-[11px] text-slate-500 dark:text-[#747C89]">Amazon ₹8,499 pending credit</span>
+              </div>
+            </DropdownItem>
+            <DropdownSeparator />
+            <DropdownItem className="text-center justify-center text-blue-600 dark:text-blue-400 font-medium">
+              Mark all as read
+            </DropdownItem>
+          </Dropdown>
+
+          {/* User Profile Dropdown (Industry Standard: Accessible anywhere) */}
+          <Dropdown
+            align="right"
+            trigger={
+              <button
+                type="button"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 dark:bg-[#232833] text-white dark:text-[#F5F7FA] font-medium text-xs select-none hover:ring-2 hover:ring-blue-500 transition-all cursor-pointer"
+                aria-label="User profile"
+              >
+                {initials}
+              </button>
+            }
+          >
+            <div className="px-3 py-2 border-b border-slate-100 dark:border-[#22262F]">
+              <div className="text-xs font-semibold text-slate-900 dark:text-[#F5F7FA] truncate">
+                {user?.name || 'User'}
+              </div>
+              <div className="text-[11px] text-slate-400 dark:text-[#747C89] truncate">
+                {user?.email || 'user@example.com'}
+              </div>
+            </div>
+            <DropdownItem icon={User} onClick={() => navigate('/app/settings')}>
+              Account Profile
+            </DropdownItem>
+            <DropdownItem icon={Settings} onClick={() => navigate('/app/settings')}>
+              Preferences
+            </DropdownItem>
+            <DropdownSeparator />
+            <DropdownItem
+              icon={LogOut}
+              danger
+              onClick={() => {
+                logout();
+                addToast({
+                  title: 'Logged Out',
+                  message: 'You have been logged out successfully.',
+                  type: 'info',
+                });
+                navigate('/');
+              }}
+            >
+              Log out
+            </DropdownItem>
+          </Dropdown>
+        </div>
+      </header>
+    </>
+  );
+};
