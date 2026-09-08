@@ -26,10 +26,20 @@ export const SettingsPage = () => {
   const { addToast } = useToast();
 
   // Clean, focused industry-standard profile fields for a post-purchase platform:
-  const [name, setName] = useState(user?.name || 'Bhuvan');
-  const [email, setEmail] = useState(user?.email || 'bhuvan@gmail.com');
-  const [phone, setPhone] = useState(user?.phone || '+91 98765 43210');
-  const [pickupCity, setPickupCity] = useState(user?.city || 'Bengaluru');
+  const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [pickupCity, setPickupCity] = useState(user?.city || '');
+
+  // Keep state in sync if user loads from backend
+  React.useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setEmail(user.email || '');
+      setPhone(user.phone || '');
+      setPickupCity(user.city || '');
+    }
+  }, [user]);
 
   // Notification sentinel thresholds
   const [urgentReminders, setUrgentReminders] = useState(true);

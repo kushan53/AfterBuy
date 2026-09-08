@@ -7,6 +7,7 @@ import { PurchaseProvider } from './context/PurchaseContext';
 import { AppShell } from './components/layout/AppShell';
 import { ScrollToTop } from './components/layout/ScrollToTop';
 import { ScrollToTopButton } from './components/layout/ScrollToTopButton';
+import { GuestRoute, ProtectedRoute } from './components/auth/RouteGuards';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
@@ -36,21 +37,42 @@ export function App() {
               <ScrollToTop />
               <ScrollToTopButton />
               <Routes>
-              {/* 1. Public Marketing / SaaS Landing Page */}
+              {/* 1. Public Marketing Landing Page (Accessible to everyone) */}
               <Route path="/" element={<LandingPage />} />
 
-              {/* 2. Authentication Pages */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
+              {/* 2. Authentication Pages (Redirects to dashboard if logged in) */}
+              <Route
+                path="/login"
+                element={
+                  <GuestRoute>
+                    <LoginPage />
+                  </GuestRoute>
+                }
+              />
+              <Route
+                path="/signup"
+                element={
+                  <GuestRoute>
+                    <SignupPage />
+                  </GuestRoute>
+                }
+              />
 
-              {/* 3. Company, Legal & Support Pages */}
+              {/* 3. Company, Legal & Support Pages (Publicly accessible) */}
               <Route path="/about" element={<AboutPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
 
-              {/* 4. Authenticated SaaS App Shell */}
-              <Route path="/app" element={<AppShell />}>
+              {/* 4. Authenticated SaaS App Shell (Redirects to login if logged out) */}
+              <Route
+                path="/app"
+                element={
+                  <ProtectedRoute>
+                    <AppShell />
+                  </ProtectedRoute>
+                }
+              >
                 <Route index element={<Navigate to="/app/dashboard" replace />} />
                 
                 {/* Real SaaS Dashboard */}

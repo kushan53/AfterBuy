@@ -1,34 +1,61 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
-import { INITIAL_PURCHASES } from '../data/mockPurchases';
+import { apiRequest } from '../utils/api';
+import { useAuth } from './AuthContext';
 
 const PurchaseContext = createContext(null);
-const STORAGE_KEY = 'afterbuy_purchases_v1';
+
+const normalizePurchase = (p) => ({
+  ...p,
+  id: p._id || p.id,
+});
 
 export const PurchaseProvider = ({ children }) => {
-  // LocalStorage persistence with INITIAL_PURCHASES fallback
-  const [purchases, setPurchases] = useState(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (e) {
-      console.error('Error reading purchases from localStorage:', e);
-    }
-    return INITIAL_PURCHASES;
-  });
+  const { token, isAuthenticated } = useAuth();
+  const [purchases, setPurchases] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Keep localStorage synchronized whenever purchases change
+  // Clear any legacy mock purchases left in localStorage
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(purchases));
+      localStorage.removeItem('afterbuy_purchases_v1');
     } catch (e) {
-      console.error('Error saving purchases to localStorage:', e);
+      // ignore
     }
-  }, [purchases]);
+  }, []);
+
+  // Fetch only REAL purchases from MongoDB backend
+  useEffect(() => {
+    const fetchPurchases = async () => {
+      const currentToken = localStorage.getItem('afterbuy_auth_token');
+      if (!currentToken) {
+        setPurchases([]);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const res = await apiRequest('/purchases');
+        if (res?.success && Array.isArray(res.data)) {
+          setPurchases(res.data.map(normalizePurchase));
+        } else {
+          setPurchases([]);
+        }
+      } catch (err) {
+        console.warn('Could not fetch purchases from backend:', err.message);
+        setPurchases([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isAuthenticated || token) {
+      fetchPurchases();
+    } else {
+      setPurchases([]);
+    }
+  }, [token, isAuthenticated]);
 
   // 1. Approaching Return Deadlines:
-  // ONLY products that are eligible or expiring (NOT yet requested or returned)
   const approachingReturnItems = useMemo(() => {
     return purchases.filter(
       (p) => p.returnStatus === 'eligible' || p.returnStatus === 'expiring'
@@ -36,7 +63,6 @@ export const PurchaseProvider = ({ children }) => {
   }, [purchases]);
 
   // 2. Pending & In-Flight Refunds:
-  // ONLY refunds that are NOT settled ('refund-pending' or 'refund-overdue')
   const pendingRefundsList = useMemo(() => {
     return purchases
       .filter((p) => p.refund && !p.refund.settled && p.refund.status !== 'refund-received')
@@ -83,11 +109,11 @@ export const PurchaseProvider = ({ children }) => {
 
   // 7. Dynamic Summary Card Metrics:
   const totalPendingRefundAmount = useMemo(() => {
-    return pendingRefundsList.reduce((acc, curr) => acc + curr.amount, 0);
+    return pendingRefundsList.reduce((acc, curr) => acc + (curr.amount || 0), 0);
   }, [pendingRefundsList]);
 
   const totalRefundedAmount = useMemo(() => {
-    return settledRefundsList.reduce((acc, curr) => acc + curr.amount, 0);
+    return settledRefundsList.reduce((acc, curr) => acc + (curr.amount || 0), 0);
   }, [settledRefundsList]);
 
   const activeReturnsCount = useMemo(() => {
@@ -99,78 +125,106 @@ export const PurchaseProvider = ({ children }) => {
     ).length;
   }, [purchases]);
 
-  // User Actions:
-  const requestReturn = (purchaseId) => {
-    setPurchases((prev) =>
-      prev.map((p) => {
-        if (p.id === purchaseId) {
-          return {
-            ...p,
-            returnStatus: 'return_requested',
-            isUrgentReturn: false,
-            refund: {
-              id: `ref-auto-${Date.now()}`,
-              amount: p.price,
-              expectedDate: 'In 5 days',
-              status: 'refund-pending',
-              isOverdue: false,
-              settled: false,
-            },
-          };
-        }
-        return p;
-      })
+  // Real Database Operations
+  const addPurchase = async (newPurchase) => {
+    try {
+      const res = await apiRequest('/purchases', {
+        method: 'POST',
+        body: JSON.stringify(newPurchase),
+      });
+
+      if (res?.data) {
+        const savedItem = normalizePurchase(res.data);
+        setPurchases((prev) => [savedItem, ...prev]);
+        return savedItem;
+      }
+    } catch (err) {
+      console.error('Failed to create purchase in database:', err);
+      throw err;
+    }
+  };
+
+  const updatePurchase = async (id, updatedFields) => {
+    try {
+      const res = await apiRequest(`/purchases/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updatedFields),
+      });
+
+      if (res?.data) {
+        const updated = normalizePurchase(res.data);
+        setPurchases((prev) =>
+          prev.map((p) => (p.id === id || p._id === id ? updated : p))
+        );
+        return updated;
+      }
+    } catch (err) {
+      console.error('Failed to update purchase in database:', err);
+      throw err;
+    }
+  };
+
+  const deletePurchase = async (id) => {
+    try {
+      await apiRequest(`/purchases/${id}`, {
+        method: 'DELETE',
+      });
+      setPurchases((prev) => prev.filter((p) => p.id !== id && p._id !== id));
+    } catch (err) {
+      console.error('Failed to delete purchase from database:', err);
+      throw err;
+    }
+  };
+
+  const requestReturn = async (purchaseId, reason) => {
+    try {
+      const res = await apiRequest(`/purchases/${purchaseId}/return`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: reason || 'Customer return requested' }),
+      });
+      if (res?.data) {
+        const updated = normalizePurchase(res.data);
+        setPurchases((prev) =>
+          prev.map((p) => (p.id === purchaseId || p._id === purchaseId ? updated : p))
+        );
+        return updated;
+      }
+    } catch (err) {
+      console.error('Failed to request return in database:', err);
+      throw err;
+    }
+  };
+
+  const markRefundReceived = async (refundOrPurchaseId) => {
+    const target = purchases.find(
+      (p) =>
+        (p.refund && p.refund.id === refundOrPurchaseId) ||
+        p.id === refundOrPurchaseId ||
+        p._id === refundOrPurchaseId
     );
-  };
 
-  const markRefundReceived = (refundId) => {
-    setPurchases((prev) =>
-      prev.map((p) => {
-        if (p.refund && p.refund.id === refundId) {
-          return {
-            ...p,
-            refund: {
-              ...p.refund,
-              status: 'refund-received',
-              settled: true,
-              isOverdue: false,
-            },
-          };
-        }
-        return p;
-      })
-    );
-  };
+    const purchaseId = target ? (target._id || target.id) : refundOrPurchaseId;
 
-  const addPurchase = (newPurchase) => {
-    const created = {
-      id: `pur-${Date.now()}`,
-      ...newPurchase,
-    };
-    setPurchases((prev) => [created, ...prev]);
-    return created;
-  };
-
-  const updatePurchase = (id, updatedFields) => {
-    setPurchases((prev) =>
-      prev.map((p) => {
-        if (p.id === id) {
-          return {
-            ...p,
-            ...updatedFields,
-          };
-        }
-        return p;
-      })
-    );
-  };
-
-  const deletePurchase = (id) => {
-    setPurchases((prev) => prev.filter((p) => p.id !== id));
+    try {
+      const res = await apiRequest(`/purchases/${purchaseId}/settle-refund`, {
+        method: 'POST',
+      });
+      if (res?.data) {
+        const updated = normalizePurchase(res.data);
+        setPurchases((prev) =>
+          prev.map((p) => (p.id === purchaseId || p._id === purchaseId ? updated : p))
+        );
+        return updated;
+      }
+    } catch (err) {
+      console.error('Failed to settle refund in database:', err);
+      throw err;
+    }
   };
 
   const value = {
     purchases,
+    isLoading,
     approachingReturnItems,
     pendingRefundsList,
     settledRefundsList,

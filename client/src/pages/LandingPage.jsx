@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   ShieldCheck,
@@ -26,78 +26,27 @@ import {
   BellRing,
   ExternalLink,
   Menu,
-  X
+  X,
+  LayoutDashboard,
+  Settings,
+  LogOut,
+  User
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { StatusBadge } from '../components/ui/StatusBadge';
-import { Dropdown, DropdownItem, DropdownLabel } from '../components/ui/Dropdown';
+import { Dropdown, DropdownItem, DropdownSeparator, DropdownLabel } from '../components/ui/Dropdown';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/ui/Toast';
+import { InteractivePipelineShowcase } from '../components/marketing/InteractivePipelineShowcase';
 
 export const LandingPage = () => {
+  const navigate = useNavigate();
+  const { addToast } = useToast();
+  const { isAuthenticated, user, initials, logout } = useAuth();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeWorkflowStep, setActiveWorkflowStep] = useState(0);
-
-  // Workflow steps for Interactive Product Showcase
-  const workflowSteps = [
-    {
-      step: '01',
-      title: 'Add Purchase Record',
-      tag: 'Step 1: Input in 10s',
-      desc: 'Enter basic details or snap your invoice. AfterBuy automatically captures merchant, price, delivery date, and policy window.',
-      previewItem: {
-        name: 'Sony WH-1000XM4 Wireless Headphones',
-        merchant: 'Amazon India',
-        price: '₹19,990',
-        stage: 'Purchase Logged',
-        badge: 'Delivered Aug 28',
-        detail: '7-Day Return Window • 1-Yr Brand Warranty',
-      }
-    },
-    {
-      step: '02',
-      title: 'Return Window Sentinel',
-      tag: 'Step 2: Proactive Countdown',
-      desc: 'Automated 72h, 48h, and 24h countdown reminders. Know the exact moment your return eligibility expires before it is too late.',
-      previewItem: {
-        name: 'Sony WH-1000XM4 Wireless Headphones',
-        merchant: 'Amazon India',
-        price: '₹19,990',
-        stage: 'Return Window Closing',
-        badge: 'Ends Tomorrow (Sep 03)',
-        detail: 'Action Required: Request return before midnight',
-      }
-    },
-    {
-      step: '03',
-      title: 'Doorstep Courier & Refund Tracker',
-      tag: 'Step 3: Paisa Wapas',
-      desc: 'Return initiated? We monitor the package pickup and hold merchants accountable to their refund turnaround promises.',
-      previewItem: {
-        name: 'Logitech MX Master 3S Mouse',
-        merchant: 'Croma Retail',
-        price: '₹7,995',
-        stage: 'Refund Overdue',
-        badge: '3 Days Past Promised Date',
-        detail: 'Courier returned package on Aug 29. Claim template ready.',
-      }
-    },
-    {
-      step: '04',
-      title: 'Long-term Warranty & Receipt Vault',
-      tag: 'Step 4: Year-Round Protection',
-      desc: 'Receipts, serial numbers, and warranty certificates stored in one secure digital vault for effortless claims down the road.',
-      previewItem: {
-        name: 'Apple iPad Air (M2, 128GB)',
-        merchant: 'Apple BKC Store',
-        price: '₹59,900',
-        stage: 'Warranty Active',
-        badge: '348 Days Coverage Remaining',
-        detail: 'Invoice #AP-99410 safely archived in PDF vault',
-      }
-    }
-  ];
 
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#F8FAFC] dark:bg-[#0F1115] text-slate-900 dark:text-[#F5F7FA] selection:bg-blue-100 selection:text-blue-700">
@@ -184,17 +133,69 @@ export const LandingPage = () => {
               </DropdownItem>
             </Dropdown>
 
-            <Link to="/login" className="hidden sm:inline-block">
-              <Button variant="ghost" size="small">
-                Sign In
-              </Button>
-            </Link>
-            <Link to="/signup" className="shrink-0">
-              <Button variant="primary" size="small" className="shadow-xs text-xs px-3 py-1.5 whitespace-nowrap">
-                <span className="hidden sm:inline">Get Started Free</span>
-                <span className="sm:hidden">Get Started</span>
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              /* Circular Avatar Only (Clean, modern with subtle gradient & ring) */
+              <Dropdown
+                align="right"
+                trigger={
+                  <button
+                    type="button"
+                    className="relative flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-semibold text-xs select-none ring-2 ring-blue-500/25 hover:ring-blue-500/60 shadow-xs hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+                    aria-label="User account"
+                  >
+                    {user?.avatar ? (
+                      <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full object-cover" />
+                    ) : (
+                      <span>{initials}</span>
+                    )}
+                  </button>
+                }
+              >
+                <div className="px-3 py-2.5 border-b border-slate-100 dark:border-[#22262F]">
+                  <div className="text-xs font-semibold text-slate-900 dark:text-[#F5F7FA] truncate">
+                    {user?.name || 'User'}
+                  </div>
+                  <div className="text-[11px] text-slate-400 dark:text-[#747C89] truncate mt-0.5">
+                    {user?.email || 'user@example.com'}
+                  </div>
+                </div>
+                <DropdownItem icon={LayoutDashboard} onClick={() => navigate('/app/dashboard')}>
+                  Go to Dashboard
+                </DropdownItem>
+                <DropdownItem icon={Settings} onClick={() => navigate('/app/settings')}>
+                  Settings
+                </DropdownItem>
+                <DropdownSeparator />
+                <DropdownItem
+                  icon={LogOut}
+                  danger
+                  onClick={() => {
+                    logout();
+                    addToast({
+                      title: 'Logged Out',
+                      message: 'You have been logged out successfully.',
+                      type: 'info',
+                    });
+                  }}
+                >
+                  Log out
+                </DropdownItem>
+              </Dropdown>
+            ) : (
+              <>
+                <Link to="/login" className="hidden sm:inline-block">
+                  <Button variant="ghost" size="small">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/signup" className="shrink-0">
+                  <Button variant="primary" size="small" className="shadow-xs text-xs px-3 py-1.5 whitespace-nowrap">
+                    <span className="hidden sm:inline">Get Started Free</span>
+                    <span className="sm:hidden">Get Started</span>
+                  </Button>
+                </Link>
+              </>
+            )}
 
             {/* Mobile menu hamburger */}
             <button
@@ -215,16 +216,59 @@ export const LandingPage = () => {
             <a href="#workflow" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-semibold text-slate-700 dark:text-[#F5F7FA] py-1">How It Works</a>
             <a href="#problem" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-semibold text-slate-700 dark:text-[#F5F7FA] py-1">The Problem</a>
             <a href="#benefits" onClick={() => setMobileMenuOpen(false)} className="block text-xs font-semibold text-slate-700 dark:text-[#F5F7FA] py-1">Benefits</a>
-            <div className="pt-3 border-t border-slate-100 dark:border-[#22262F] flex flex-col gap-2">
-              <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="text-xs font-semibold text-slate-700 dark:text-[#F5F7FA] py-1.5 text-center rounded-lg border border-slate-200 dark:border-[#292E38]">
-                Sign In
-              </Link>
-              <Link to="/signup" onClick={() => setMobileMenuOpen(false)} className="w-full">
-                <Button variant="primary" size="small" className="w-full text-xs py-2">
-                  Get Started Free
-                </Button>
-              </Link>
-            </div>
+            {isAuthenticated ? (
+              <div className="pt-3 border-t border-slate-100 dark:border-[#22262F] space-y-2.5">
+                <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#171A21] border border-slate-100 dark:border-[#22262F]">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-semibold text-xs shrink-0 ring-2 ring-blue-500/20">
+                    {user?.avatar ? (
+                      <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full object-cover" />
+                    ) : (
+                      initials
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-semibold text-slate-900 dark:text-[#F5F7FA] truncate">
+                      {user?.name || 'User'}
+                    </div>
+                    <div className="text-[10px] text-slate-400 dark:text-[#747C89] truncate">
+                      {user?.email || 'user@example.com'}
+                    </div>
+                  </div>
+                </div>
+                <Link to="/app/dashboard" onClick={() => setMobileMenuOpen(false)} className="w-full block">
+                  <Button variant="primary" size="small" className="w-full text-xs py-2">
+                    Open Dashboard →
+                  </Button>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                    addToast({
+                      title: 'Logged Out',
+                      message: 'You have been logged out successfully.',
+                      type: 'info',
+                    });
+                  }}
+                  className="w-full text-left px-3 py-2 text-xs text-rose-600 dark:text-rose-400 font-medium hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors flex items-center gap-2 cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Log out</span>
+                </button>
+              </div>
+            ) : (
+              <div className="pt-3 border-t border-slate-100 dark:border-[#22262F] flex flex-col gap-2">
+                <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="text-xs font-semibold text-slate-700 dark:text-[#F5F7FA] py-1.5 text-center rounded-lg border border-slate-200 dark:border-[#292E38]">
+                  Sign In
+                </Link>
+                <Link to="/signup" onClick={() => setMobileMenuOpen(false)} className="w-full">
+                  <Button variant="primary" size="small" className="w-full text-xs py-2">
+                    Get Started Free
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </header>
@@ -597,6 +641,11 @@ export const LandingPage = () => {
       </section>
 
       {/* ========================================================================= */}
+      {/* 6.5 INTERACTIVE RESOLUTION PIPELINE SHOWCASE (HOW IT WORKS) */}
+      {/* ========================================================================= */}
+      <InteractivePipelineShowcase />
+
+      {/* ========================================================================= */}
       {/* 7. PROBLEM SECTION */}
       {/* ========================================================================= */}
       <section id="problem" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-20">
@@ -911,121 +960,7 @@ export const LandingPage = () => {
         </div>
       </section>
 
-      {/* ========================================================================= */}
-      {/* 10. INTERACTIVE PRODUCT SHOWCASE (STEP-BY-STEP WORKFLOW) */}
-      {/* ========================================================================= */}
-      <section id="workflow" className="py-20 bg-slate-50/70 dark:bg-[#11141A]/60 border-y border-slate-200/80 dark:border-[#22262F] scroll-mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-3 py-1 rounded-md border border-blue-200 dark:border-blue-800/50">
-              Interactive Workflow
-            </span>
-            <h2 className="mt-4 text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-[#F5F7FA]">
-              See how AfterBuy manages a real order.
-            </h2>
-            <p className="mt-3 text-sm text-slate-500 dark:text-[#A9B0BC]">
-              Click through the lifecycle stages below to experience how AfterBuy escorts an item from delivery to warranty protection.
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            
-            {/* Left Column: Interactive Stage Selectors */}
-            <div className="lg:col-span-5 space-y-3">
-              {workflowSteps.map((step, idx) => (
-                <button
-                  key={step.step}
-                  type="button"
-                  onClick={() => setActiveWorkflowStep(idx)}
-                  className={`w-full text-left p-4 sm:p-5 rounded-xl border transition-colors cursor-pointer ${
-                    activeWorkflowStep === idx
-                      ? 'border-blue-500/80 bg-white dark:bg-[#171A21] shadow-md shadow-blue-500/5 dark:shadow-black/50 ring-1 ring-blue-500/30'
-                      : 'border-slate-200/80 dark:border-[#292E38] bg-white/60 dark:bg-[#13161C]/50 hover:bg-white dark:hover:bg-[#171A21]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`text-[11px] font-bold uppercase tracking-wider ${
-                      activeWorkflowStep === idx ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-[#747C89]'
-                    }`}>
-                      {step.tag}
-                    </span>
-                    <span className={`text-xs font-mono font-bold ${
-                      activeWorkflowStep === idx ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'
-                    }`}>
-                      {step.step}
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-[#F5F7FA]">
-                    {step.title}
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-[#A9B0BC] mt-1 line-clamp-2">
-                    {step.desc}
-                  </p>
-                </button>
-              ))}
-            </div>
-
-            {/* Right Column: Live Simulated UI Card for Selected Step */}
-            <div className="lg:col-span-7">
-              <div className="p-6 sm:p-8 rounded-2xl border border-slate-200/90 dark:border-[#292E38] bg-white dark:bg-[#171A21] shadow-xl shadow-slate-900/5 dark:shadow-black/60">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-[#22262F]">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-[#F5F7FA]">
-                      Stage {workflowSteps[activeWorkflowStep].step}: {workflowSteps[activeWorkflowStep].title}
-                    </span>
-                  </div>
-                  <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2.5 py-0.5 rounded-full">
-                    Telemetry Active
-                  </span>
-                </div>
-
-                {/* Simulated Order Card */}
-                <div className="my-6 p-5 rounded-xl bg-slate-50 dark:bg-[#13161C] border border-slate-200/80 dark:border-[#292E38] space-y-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#747C89]">
-                        Tracked Purchase Record
-                      </span>
-                      <h4 className="text-base font-bold text-slate-900 dark:text-[#F5F7FA] mt-0.5">
-                        {workflowSteps[activeWorkflowStep].previewItem.name}
-                      </h4>
-                      <p className="text-xs text-slate-500 dark:text-[#A9B0BC]">
-                        {workflowSteps[activeWorkflowStep].previewItem.merchant} • {workflowSteps[activeWorkflowStep].previewItem.price}
-                      </p>
-                    </div>
-                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-white dark:bg-[#1C2028] px-2.5 py-1 rounded-lg border border-slate-200 dark:border-[#292E38] shadow-2xs">
-                      {workflowSteps[activeWorkflowStep].previewItem.stage}
-                    </span>
-                  </div>
-
-                  <div className="p-3 rounded-lg bg-white dark:bg-[#171A21] border border-slate-200/80 dark:border-[#22262F] flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-[#F5F7FA]">
-                      <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      <span>{workflowSteps[activeWorkflowStep].previewItem.detail}</span>
-                    </div>
-                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded">
-                      {workflowSteps[activeWorkflowStep].previewItem.badge}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100 dark:border-[#22262F]">
-                  <p className="text-xs text-slate-500 dark:text-[#A9B0BC]">
-                    {workflowSteps[activeWorkflowStep].desc}
-                  </p>
-                  <Link to="/signup" className="shrink-0 w-full sm:w-auto">
-                    <Button variant="primary" size="small" icon={ArrowRight} iconPosition="right" className="w-full sm:w-auto">
-                      Test This In App
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
 
       {/* ========================================================================= */}
       {/* 11. HOW IT WORKS (SIMPLE 3-STEP PROCESS) */}

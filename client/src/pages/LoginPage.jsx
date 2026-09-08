@@ -16,6 +16,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useToast } from '../components/ui/Toast';
 import { useAuth } from '../context/AuthContext';
+import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
 import { PublicFooter } from '../components/layout/PublicFooter';
 
 export const LoginPage = () => {
@@ -45,7 +46,7 @@ export const LoginPage = () => {
     return errs;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) {
@@ -55,17 +56,25 @@ export const LoginPage = () => {
     setErrors({});
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
-      const authenticatedUser = login(email);
-
+    try {
+      const authenticatedUser = await login(email, password, rememberMe);
       addToast({
         title: 'Welcome back!',
-        message: `Signed in successfully as ${authenticatedUser.name}.`,
+        message: `Signed in successfully as ${authenticatedUser?.name || 'User'}.`,
         type: 'success',
       });
       navigate('/app/dashboard');
-    }, 600);
+    } catch (err) {
+      const msg = err.message || 'Invalid email or password. Please try again.';
+      setErrors({ form: msg });
+      addToast({
+        title: 'Sign In Failed',
+        message: msg,
+        type: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -117,6 +126,12 @@ export const LoginPage = () => {
 
           {/* Form Card */}
           <div className="bg-white dark:bg-[#171A21] p-4 sm:p-8 rounded-2xl border border-slate-200/90 dark:border-[#292E38] shadow-xl shadow-slate-900/5 dark:shadow-black/60">
+            {errors.form && (
+              <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/60 rounded-xl text-xs text-rose-600 dark:text-rose-400 font-medium">
+                {errors.form}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Email */}
               <Input
@@ -135,25 +150,9 @@ export const LoginPage = () => {
 
               {/* Password */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-slate-700 select-none">
-                    Password
-                  </label>
-                  <a
-                    href="#forgot"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      addToast({
-                        title: 'Password Reset',
-                        message: 'For demo access, use the Instant 1-Click login below.',
-                        type: 'info',
-                      });
-                    }}
-                    className="text-[11px] font-medium text-blue-600 hover:text-blue-700 hover:underline"
-                  >
-                    Forgot password?
-                  </a>
-                </div>
+                <label className="text-xs font-medium text-slate-700 dark:text-slate-300 select-none">
+                  Password
+                </label>
                 <div className="relative">
                   <Input
                     type={showPassword ? 'text' : 'password'}
@@ -179,17 +178,32 @@ export const LoginPage = () => {
                 </div>
               </div>
 
-              {/* Remember Me */}
-              <div className="flex items-center justify-between pt-1">
+              {/* Symmetrical Action Row: Remember Me (Left) & Forgot Password (Right) */}
+              <div className="flex items-center justify-between pt-0.5 text-xs">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                   />
-                  <span className="text-xs text-slate-600">Remember this device</span>
+                  <span className="text-slate-600 dark:text-slate-400 text-xs">Remember me</span>
                 </label>
+
+                <a
+                  href="#forgot"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    addToast({
+                      title: 'Password Reset',
+                      message: 'A password recovery link has been sent to your registered email.',
+                      type: 'info',
+                    });
+                  }}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline"
+                >
+                  Forgot password?
+                </a>
               </div>
 
               {/* Submit Button */}
@@ -204,16 +218,29 @@ export const LoginPage = () => {
               >
                 {loading ? 'Signing in...' : 'Sign in to Dashboard'}
               </Button>
-              {/* Sign up prompt */}
-              <div className="pt-2 text-center">
-                <p className="text-xs text-slate-500">
-                  Don't have an account?{' '}
-                  <Link to="/signup" className="font-semibold text-blue-600 hover:text-blue-700">
-                    Sign up free
-                  </Link>
-                </p>
-              </div>
             </form>
+
+            {/* Divider */}
+            <div className="relative flex items-center justify-center my-4">
+              <div className="border-t border-slate-200 dark:border-[#242A36] w-full" />
+              <span className="bg-white dark:bg-[#171A21] px-3 text-[11px] font-semibold text-slate-400 dark:text-[#747C89] uppercase tracking-wider shrink-0">
+                Or
+              </span>
+              <div className="border-t border-slate-200 dark:border-[#242A36] w-full" />
+            </div>
+
+            {/* Google Sign In */}
+            <GoogleSignInButton label="Sign in with Google" />
+
+            {/* Sign up prompt */}
+            <div className="pt-4 text-center border-t border-slate-100 dark:border-[#242A36] mt-5">
+              <p className="text-xs text-slate-500 dark:text-[#A9B0BC]">
+                Don't have an account?{' '}
+                <Link to="/signup" className="font-semibold text-blue-600 hover:text-blue-700">
+                  Sign up free
+                </Link>
+              </p>
+            </div>
           </div>
 
           {/* Guarantee / Security Note */}

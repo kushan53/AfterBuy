@@ -50,8 +50,9 @@ export const AddPurchasePage = () => {
   const [warrantyOption, setWarrantyOption] = useState('1yr');
   const [customWarrantyExpiry, setCustomWarrantyExpiry] = useState('');
 
-  // SECTION 5: Mock Document Upload
+  // Mock Document Upload
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Validation state
   const [errors, setErrors] = useState({});
@@ -91,7 +92,7 @@ export const AddPurchasePage = () => {
   };
 
   // Form Submit & Validation
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
 
@@ -182,15 +183,26 @@ export const AddPurchasePage = () => {
       hasReceipt: Boolean(uploadedFile),
     };
 
-    addPurchase(newPurchase);
+    setIsSubmitting(true);
+    try {
+      await addPurchase(newPurchase);
 
-    addToast({
-      title: 'Purchase Added',
-      message: `${newPurchase.name} has been added to your tracking ledger.`,
-      type: 'success',
-    });
+      addToast({
+        title: 'Purchase Saved to Cloud',
+        message: `${newPurchase.name} added to your account in MongoDB.`,
+        type: 'success',
+      });
 
-    navigate('/app/purchases');
+      navigate('/app/purchases');
+    } catch (err) {
+      addToast({
+        title: 'Failed to Save',
+        message: err.message || 'Could not save purchase to the database.',
+        type: 'error',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

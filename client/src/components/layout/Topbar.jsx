@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Bell, Menu, Plus, Command, Sun, Moon, Laptop, Check, User, Settings, LogOut } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Search, Bell, Menu, Plus, Command, Sun, Moon, Laptop, Check, User, Settings, LogOut, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Dropdown, DropdownItem, DropdownSeparator, DropdownLabel } from '../ui/Dropdown';
 import { Button } from '../ui/Button';
 import { CommandPalette } from './CommandPalette';
 import { useAuth } from '../../context/AuthContext';
+import { usePurchases } from '../../context/PurchaseContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../ui/Toast';
 
@@ -13,8 +14,60 @@ export const Topbar = ({ onMenuClick, onQuickAddClick }) => {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { user, initials, logout } = useAuth();
+  const { urgentReturns, overdueRefunds, expiringWarrantiesList } = usePurchases();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [readNotificationIds, setReadNotificationIds] = useState([]);
+
+  // Compute real notifications dynamically from the user's active database items
+  const activeNotifications = useMemo(() => {
+    const list = [];
+
+    // 1. Expiring Return Windows
+    urgentReturns.forEach((item) => {
+      list.push({
+        id: `ret-${item.id}`,
+        title: `Return window ${item.deadlineText ? item.deadlineText.toLowerCase() : 'ending soon'}`,
+        subtitle: `${item.name} • ${item.merchant}`,
+        link: `/app/returns`,
+      });
+    });
+
+    // 2. Overdue Refunds
+    overdueRefunds.forEach((ref) => {
+      list.push({
+        id: `ref-${ref.purchaseId || ref.id}`,
+        title: `Refund overdue`,
+        subtitle: `${ref.merchant || 'Store'} • ₹${ref.amount?.toLocaleString('en-IN')} pending`,
+        link: `/app/refunds`,
+      });
+    });
+
+    // 3. Expiring Warranties
+    expiringWarrantiesList.forEach((item) => {
+      list.push({
+        id: `war-${item.id}`,
+        title: `Warranty expiring soon`,
+        subtitle: `${item.name} • ${item.warrantyDaysLeft} days left`,
+        link: `/app/warranties`,
+      });
+    });
+
+    return list;
+  }, [urgentReturns, overdueRefunds, expiringWarrantiesList]);
+
+  const unreadNotifications = activeNotifications.filter(
+    (n) => !readNotificationIds.includes(n.id)
+  );
+
+  const handleMarkAllAsRead = () => {
+    setReadNotificationIds(activeNotifications.map((n) => n.id));
+    addToast({
+      title: 'Notifications Cleared',
+      message: 'All notifications marked as read.',
+      type: 'info',
+    });
+  };
 
   // Global Cmd+K / Ctrl+K listener
   useEffect(() => {
@@ -58,10 +111,16 @@ export const Topbar = ({ onMenuClick, onQuickAddClick }) => {
           </button>
 
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-slate-400 dark:text-[#747C89] font-medium hidden sm:inline">
-              {currentMeta.context}
-            </span>
-            <span className="text-slate-300 dark:text-[#292E38] hidden sm:inline">/</span>
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 text-slate-500 dark:text-[#A9B0BC] hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors group"
+              title="Back to Homepage"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:-translate-x-0.5 transition-transform shrink-0" />
+              <span className="hidden sm:inline">Back to homepage</span>
+              <span className="sm:hidden">Home</span>
+            </Link>
+            <span className="text-slate-300 dark:text-[#292E38]">/</span>
             <h1 className="text-sm font-semibold text-slate-900 dark:text-[#F5F7FA] tracking-tight">
               {currentMeta.title}
             </h1>
@@ -154,31 +213,51 @@ export const Topbar = ({ onMenuClick, onQuickAddClick }) => {
             trigger={
               <button
                 type="button"
-                className="relative p-2 rounded-lg text-slate-500 dark:text-[#A9B0BC] hover:text-slate-800 dark:hover:text-[#F5F7FA] hover:bg-slate-100 dark:hover:bg-[#1C2028] transition-colors"
+                className="relative p-2 rounded-lg text-slate-500 dark:text-[#A9B0BC] hover:text-slate-800 dark:hover:text-[#F5F7FA] hover:bg-slate-100 dark:hover:bg-[#1C2028] transition-colors cursor-pointer"
                 aria-label="Notifications"
               >
                 <Bell className="w-4 h-4" />
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white dark:ring-[#11141A]" />
+                {unreadNotifications.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white dark:ring-[#11141A]" />
+                )}
               </button>
             }
           >
-            <DropdownLabel>Notifications (2 new)</DropdownLabel>
-            <DropdownItem onClick={() => navigate('/app/returns')}>
-              <div className="flex flex-col gap-0.5 text-left py-0.5">
-                <span className="font-semibold text-slate-800 dark:text-[#F5F7FA]">Return window ends tomorrow</span>
-                <span className="text-[11px] text-slate-500 dark:text-[#747C89]">Sony WH-1000XM4 Headphones</span>
+            <DropdownLabel>
+              Notifications {unreadNotifications.length > 0 ? `(${unreadNotifications.length} new)` : ''}
+            </DropdownLabel>
+
+            {unreadNotifications.length > 0 ? (
+              <>
+                {unreadNotifications.map((notif) => (
+                  <DropdownItem key={notif.id} onClick={() => navigate(notif.link)}>
+                    <div className="flex flex-col gap-0.5 text-left py-0.5 max-w-xs">
+                      <span className="font-semibold text-slate-800 dark:text-[#F5F7FA] text-xs">
+                        {notif.title}
+                      </span>
+                      <span className="text-[11px] text-slate-500 dark:text-[#747C89] truncate">
+                        {notif.subtitle}
+                      </span>
+                    </div>
+                  </DropdownItem>
+                ))}
+                <DropdownSeparator />
+                <DropdownItem
+                  onClick={handleMarkAllAsRead}
+                  className="text-center justify-center text-blue-600 dark:text-blue-400 font-medium text-xs"
+                >
+                  Mark all as read
+                </DropdownItem>
+              </>
+            ) : (
+              <div className="p-4 text-center text-xs text-slate-400 dark:text-[#747C89] space-y-1">
+                <CheckCircle2 className="w-4 h-4 mx-auto text-emerald-500 mb-1" />
+                <div className="font-medium text-slate-700 dark:text-[#F5F7FA]">All caught up!</div>
+                <p className="text-[11px] text-slate-400 dark:text-[#747C89]">
+                  No urgent return deadlines or overdue refunds.
+                </p>
               </div>
-            </DropdownItem>
-            <DropdownItem onClick={() => navigate('/app/refunds')}>
-              <div className="flex flex-col gap-0.5 text-left py-0.5">
-                <span className="font-semibold text-slate-800 dark:text-[#F5F7FA]">Refund overdue by 2 days</span>
-                <span className="text-[11px] text-slate-500 dark:text-[#747C89]">Amazon ₹8,499 pending credit</span>
-              </div>
-            </DropdownItem>
-            <DropdownSeparator />
-            <DropdownItem className="text-center justify-center text-blue-600 dark:text-blue-400 font-medium">
-              Mark all as read
-            </DropdownItem>
+            )}
           </Dropdown>
 
           {/* User Profile Dropdown (Industry Standard: Accessible anywhere) */}

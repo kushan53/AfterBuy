@@ -32,14 +32,25 @@ export const PurchaseDetailsPage = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const purchase = purchases.find((p) => p.id === id) || {
-    id,
-    name: 'Purchase Record',
-    merchant: 'Merchant Store',
-    price: 0,
-    deliveryDate: 'Delivered',
-    returnStatus: 'eligible',
-  };
+  const purchase = purchases.find((p) => p.id === id || p._id === id);
+
+  if (!purchase) {
+    return (
+      <div className="space-y-4 max-w-xl mx-auto py-16 text-center">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-[#F5F7FA]">Purchase Not Found</h2>
+        <p className="text-xs text-slate-500 dark:text-[#A9B0BC]">
+          This record does not exist in your MongoDB account or was deleted.
+        </p>
+        <div className="pt-2">
+          <Link to="/app/purchases">
+            <Button variant="primary" size="small">
+              Back to Purchases
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const [editFormData, setEditFormData] = useState({
     name: purchase.name || '',

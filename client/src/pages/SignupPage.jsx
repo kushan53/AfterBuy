@@ -17,6 +17,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useToast } from '../components/ui/Toast';
 import { useAuth } from '../context/AuthContext';
+import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
 import { PublicFooter } from '../components/layout/PublicFooter';
 
 export const SignupPage = () => {
@@ -70,7 +71,7 @@ export const SignupPage = () => {
     return errs;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) {
@@ -80,18 +81,25 @@ export const SignupPage = () => {
     setErrors({});
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
-      // Persist active user session with provided name & email
-      signup(name, email);
-
+    try {
+      const authenticatedUser = await signup(name, email, password);
       addToast({
         title: 'Account Created!',
         message: `Welcome to AfterBuy, ${name.trim()}! Your dashboard is ready.`,
         type: 'success',
       });
       navigate('/app/dashboard');
-    }, 600);
+    } catch (err) {
+      const msg = err.message || 'Failed to create account. Please try again.';
+      setErrors({ form: msg });
+      addToast({
+        title: 'Registration Failed',
+        message: msg,
+        type: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -143,6 +151,12 @@ export const SignupPage = () => {
 
           {/* Form Card */}
           <div className="bg-white dark:bg-[#171A21] p-4 sm:p-8 rounded-2xl border border-slate-200/90 dark:border-[#292E38] shadow-xl shadow-slate-900/5 dark:shadow-black/60">
+            {errors.form && (
+              <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/60 rounded-xl text-xs text-rose-600 dark:text-rose-400 font-medium">
+                {errors.form}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Name */}
               <Input
@@ -293,8 +307,20 @@ export const SignupPage = () => {
               </Button>
             </form>
 
-            <div className="mt-5 pt-5 border-t border-slate-100 text-center">
-              <p className="text-xs text-slate-500">
+            {/* Divider */}
+            <div className="relative flex items-center justify-center my-4">
+              <div className="border-t border-slate-200 dark:border-[#242A36] w-full" />
+              <span className="bg-white dark:bg-[#171A21] px-3 text-[11px] font-semibold text-slate-400 dark:text-[#747C89] uppercase tracking-wider shrink-0">
+                Or
+              </span>
+              <div className="border-t border-slate-200 dark:border-[#242A36] w-full" />
+            </div>
+
+            {/* Google Sign Up */}
+            <GoogleSignInButton label="Sign up with Google" />
+
+            <div className="pt-4 text-center border-t border-slate-100 dark:border-[#242A36] mt-5">
+              <p className="text-xs text-slate-500 dark:text-[#A9B0BC]">
                 Already registered?{' '}
                 <Link to="/login" className="font-semibold text-blue-600 hover:text-blue-700">
                   Sign in here

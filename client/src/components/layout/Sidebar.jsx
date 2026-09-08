@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -93,8 +93,12 @@ export const Sidebar = ({ mobileOpen, setMobileOpen }) => {
       {/* Top section: Logo */}
       <div className="flex flex-col">
         <div className="flex h-16 items-center justify-between px-6 border-b border-slate-100 dark:border-[#22262F]">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-sm shadow-xs tracking-wider">
+          <Link
+            to="/"
+            title="Go to Homepage"
+            className="flex items-center gap-2.5 group transition-opacity hover:opacity-85 cursor-pointer"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-sm shadow-xs tracking-wider group-hover:scale-105 transition-transform">
               AB
             </div>
             <div className="flex flex-col">
@@ -105,7 +109,7 @@ export const Sidebar = ({ mobileOpen, setMobileOpen }) => {
                 Post-purchase OS
               </span>
             </div>
-          </div>
+          </Link>
 
           {/* Close button on mobile */}
           {mobileOpen && (
