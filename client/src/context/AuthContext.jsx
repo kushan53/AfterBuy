@@ -10,6 +10,7 @@ export const AuthProvider = ({ children }) => {
     () => localStorage.getItem(TOKEN_STORAGE_KEY) || sessionStorage.getItem(TOKEN_STORAGE_KEY) || null
   );
   const [loading, setLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const [user, setUser] = useState(() => {
     try {
@@ -171,6 +172,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    setIsLoggingOut(true);
     localStorage.removeItem(TOKEN_STORAGE_KEY);
     localStorage.removeItem(USER_STORAGE_KEY);
     localStorage.removeItem('afterbuy_purchases_v1');
@@ -178,6 +180,9 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.removeItem(USER_STORAGE_KEY);
     setToken(null);
     setUser(null);
+    setTimeout(() => {
+      setIsLoggingOut(false);
+    }, 600);
   };
 
   return (
@@ -186,6 +191,7 @@ export const AuthProvider = ({ children }) => {
         user,
         token,
         loading,
+        isLoggingOut,
         isAuthenticated: !!token && !!user,
         initials: getInitials(user?.name),
         firstName: getFirstName(user?.name),

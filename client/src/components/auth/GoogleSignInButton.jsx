@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../ui/Toast';
@@ -8,68 +8,70 @@ export const GoogleSignInButton = ({ label = 'Sign in with Google' }) => {
   const { loginWithGoogle } = useAuth();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const tokenClientRef = useRef(null);
 
   const googleClientId =
     import.meta.env.VITE_GOOGLE_CLIENT_ID ||
     '894400675739-05jcldhnve82v8nejgvsq52n4uqvaoq5.apps.googleusercontent.com';
 
-  // Handle credential response from Google
-  const handleCredentialResponse = async (response) => {
-    setLoading(true);
-    try {
-      if (!response.credential) {
-        throw new Error('No credential returned from Google');
-      }
-
-      // Decode the signed JWT from Google
-      const base64Url = response.credential.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-      const payload = JSON.parse(jsonPayload);
-
-      // Authenticate with our AfterBuy backend (stores in MongoDB Atlas)
-      const user = await loginWithGoogle({
-        name: payload.name || payload.given_name || 'Google User',
-        email: payload.email,
-        googleId: payload.sub,
-        avatar: payload.picture || '',
-      });
-
-      addToast({
-        title: 'Google Sign In Successful',
-        message: `Welcome, ${user.name}! Verified securely via Google.`,
-        type: 'success',
-      });
-
-      navigate('/app/dashboard');
-    } catch (err) {
-      console.error('Google Sign In Error:', err);
-      addToast({
-        title: 'Google Sign In Failed',
-        message: err.message || 'Could not verify Google account.',
-        type: 'error',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Initialize Google Identity Services in background
+  // Initialize Google Identity Services OAuth2 Token Client
   useEffect(() => {
     const scriptId = 'google-identity-script';
     let script = document.getElementById(scriptId);
 
     const initGIS = () => {
-      if (window.google?.accounts?.id) {
-        window.google.accounts.id.initialize({
+      if (window.google?.accounts?.oauth2) {
+        tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
           client_id: googleClientId,
-          callback: handleCredentialResponse,
-          auto_select: false,
+          scope: 'email profile openid',
+          callback: async (tokenResponse) => {
+            if (tokenResponse?.error) {
+              console.error('Google OAuth token error:', tokenResponse);
+              setLoading(false);
+              return;
+            }
+
+            try {
+              setLoading(true);
+              // Fetch user profile from Google's official userinfo endpoint
+              const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: {
+                  Authorization: `Bearer ${tokenResponse.access_token}`,
+                },
+              });
+
+              if (!res.ok) {
+                throw new Error('Failed to retrieve user profile from Google');
+              }
+
+              const profile = await res.json();
+
+              // Authenticate with our AfterBuy backend (stored in MongoDB Atlas)
+              const user = await loginWithGoogle({
+                name: profile.name || profile.given_name || 'Google User',
+                email: profile.email,
+                googleId: profile.sub,
+                avatar: profile.picture || '',
+              });
+
+              addToast({
+                title: 'Google Sign In Successful',
+                message: `Welcome, ${user.name}!`,
+                type: 'success',
+              });
+
+              navigate('/app/dashboard');
+            } catch (err) {
+              console.error('Google Sign In Error:', err);
+              addToast({
+                title: 'Google Sign In Failed',
+                message: err.message || 'Could not verify Google account.',
+                type: 'error',
+              });
+            } finally {
+              setLoading(false);
+            }
+          },
         });
       }
     };
@@ -82,46 +84,40 @@ export const GoogleSignInButton = ({ label = 'Sign in with Google' }) => {
       script.defer = true;
       script.onload = initGIS;
       document.body.appendChild(script);
-    } else if (window.google?.accounts?.id) {
+    } else {
       initGIS();
     }
   }, [googleClientId]);
 
-  // Click handler: opens Google authentication prompt or popup
+  // Handle button click: opens Google's native account chooser popup
   const handleGoogleClick = () => {
-    if (window.google?.accounts?.id) {
-      window.google.accounts.id.prompt((notification) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          openGoogleOAuthPopup();
-        }
-      });
-      return;
+    if (!tokenClientRef.current) {
+      if (window.google?.accounts?.oauth2) {
+        tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
+          client_id: googleClientId,
+          scope: 'email profile openid',
+          callback: () => {},
+        });
+      } else {
+        addToast({
+          title: 'Google Services Loading',
+          message: 'Connecting to Google services. Please try again in a few seconds.',
+          type: 'info',
+        });
+        return;
+      }
     }
 
-    openGoogleOAuthPopup();
-  };
-
-  const openGoogleOAuthPopup = () => {
-    const redirectUri = window.location.origin;
-    const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${googleClientId}&redirect_uri=${encodeURIComponent(
-      redirectUri
-    )}&response_type=token%20id_token&scope=openid%20email%20profile&nonce=${Date.now()}`;
-
-    const width = 500;
-    const height = 600;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-
-    const popup = window.open(
-      oauthUrl,
-      'GoogleSignIn',
-      `width=${width},height=${height},top=${top},left=${left}`
-    );
-
-    if (!popup) {
+    try {
+      setLoading(true);
+      // Trigger Google's popup; Google automatically closes the popup upon selection
+      tokenClientRef.current.requestAccessToken({ prompt: 'select_account' });
+    } catch (err) {
+      console.error('Google OAuth trigger error:', err);
+      setLoading(false);
       addToast({
-        title: 'Popup Blocked',
-        message: 'Please allow popups for Google Sign-In.',
+        title: 'Google Sign In Error',
+        message: 'Could not open Google authentication popup.',
         type: 'error',
       });
     }
@@ -129,7 +125,7 @@ export const GoogleSignInButton = ({ label = 'Sign in with Google' }) => {
 
   return (
     <div className="w-full">
-      {/* Sleek, full-width, tactile Google Button */}
+      {/* Sleek, tactile Google Button */}
       <button
         type="button"
         id="google-signin-btn"

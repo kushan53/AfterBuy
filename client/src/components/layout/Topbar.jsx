@@ -298,7 +298,7 @@ export const Topbar = ({ onMenuClick, onQuickAddClick }) => {
                   message: 'You have been logged out successfully.',
                   type: 'info',
                 });
-                navigate('/');
+                navigate('/', { replace: true });
               }}
             >
               Log out

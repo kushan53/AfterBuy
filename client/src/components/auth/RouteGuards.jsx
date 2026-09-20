@@ -29,7 +29,7 @@ export const GuestRoute = ({ children }) => {
  * Used for: /app/* dashboard and private pages
  */
 export const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, isLoggingOut } = useAuth();
 
   if (loading) {
     return (
@@ -39,6 +39,12 @@ export const ProtectedRoute = ({ children }) => {
     );
   }
 
+  // If user explicitly logged out, take them directly to Homepage (/)
+  if (isLoggingOut) {
+    return <Navigate to="/" replace />;
+  }
+
+  // If unauthenticated visitor attempted direct access, take them to /login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
