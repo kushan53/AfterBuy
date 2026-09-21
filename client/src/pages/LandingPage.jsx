@@ -30,7 +30,8 @@ import {
   LayoutDashboard,
   Settings,
   LogOut,
-  User
+  User,
+  Search
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -38,15 +39,27 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { Dropdown, DropdownItem, DropdownSeparator, DropdownLabel } from '../components/ui/Dropdown';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { usePurchases } from '../context/PurchaseContext';
 import { useToast } from '../components/ui/Toast';
 import { InteractivePipelineShowcase } from '../components/marketing/InteractivePipelineShowcase';
 
 export const LandingPage = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const { isAuthenticated, user, initials, logout } = useAuth();
+  const { isAuthenticated, user, firstName, initials, logout } = useAuth();
+  const {
+    purchases = [],
+    approachingReturnItems = [],
+    urgentReturns = [],
+    overdueRefunds = [],
+    urgentCount = 0,
+    totalActiveWarranties = 0,
+    totalPendingRefundAmount = 0,
+    totalRefundedAmount = 0,
+  } = usePurchases();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [dashboardFilter, setDashboardFilter] = useState('all');
 
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#F8FAFC] dark:bg-[#0F1115] text-slate-900 dark:text-[#F5F7FA] selection:bg-blue-100 selection:text-blue-700">
@@ -336,252 +349,556 @@ export const LandingPage = () => {
         {/* ========================================================================= */}
         <div id="preview" className="mt-14 relative mx-auto max-w-5xl text-left scroll-mt-24">
           
-          {/* Subtle Ambient Backlight Framing */}
-          <div className="absolute inset-0 rounded-2xl bg-blue-500/10 dark:bg-blue-600/10 -z-10" />
+          {/* Subtle Ambient Backlight Glow Framing */}
+          <div className="absolute -inset-1.5 rounded-3xl bg-gradient-to-r from-blue-600/20 via-indigo-600/15 to-emerald-500/15 blur-xl opacity-70 dark:opacity-40 -z-10" />
 
-          {/* Main Dashboard Preview Container */}
-          <div className="rounded-2xl border border-slate-200/90 dark:border-[#292E38] bg-white dark:bg-[#171A21] shadow-2xl shadow-slate-900/10 dark:shadow-black/70 overflow-hidden">
+          {/* Main Dashboard Preview Window */}
+          <div className="rounded-2xl border border-slate-200/90 dark:border-white/10 bg-white/95 dark:bg-[#0D1017]/95 backdrop-blur-xl shadow-2xl shadow-slate-900/10 dark:shadow-black/80 overflow-hidden">
             
-            {/* Top Product Window Header Bar */}
-            <div className="px-4 py-3 bg-slate-50/90 dark:bg-[#13161C] border-b border-slate-200/80 dark:border-[#22262F] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-rose-400/80" />
-                <span className="w-3 h-3 rounded-full bg-amber-400/80" />
-                <span className="w-3 h-3 rounded-full bg-emerald-400/80" />
-                <span className="ml-2 font-mono text-[11px] text-slate-500 dark:text-[#A9B0BC]">
-                  app.afterbuy.io/dashboard
-                </span>
-              </div>
+            {/* Modern macOS / Web App Window Chrome Header */}
+            <div className="px-4 sm:px-5 py-3 bg-slate-50/90 dark:bg-[#11141A] border-b border-slate-200/80 dark:border-white/10 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-full border border-emerald-200/80 dark:border-emerald-800/60">
+                {/* Window Traffic Lights */}
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full bg-rose-500/90 shadow-xs" />
+                  <span className="w-3 h-3 rounded-full bg-amber-500/90 shadow-xs" />
+                  <span className="w-3 h-3 rounded-full bg-emerald-500/90 shadow-xs" />
+                </div>
+
+                {/* Central URL & Command Palette Bar */}
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-100/90 dark:bg-white/5 border border-slate-200/70 dark:border-white/10 text-slate-500 dark:text-[#A9B0BC] text-xs font-mono">
+                  <Search className="w-3 h-3 text-slate-400" />
+                  <span>app.afterbuy.io/dashboard</span>
+                  <span className="ml-1.5 px-1 py-0.2 rounded text-[9px] bg-slate-200/80 dark:bg-white/10 text-slate-600 dark:text-slate-400 font-sans">⌘K</span>
+                </div>
+              </div>
+
+              {/* Right Status Badge */}
+              <div className="flex items-center gap-2.5">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200/80 dark:border-emerald-800/60">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Live System • 2 Urgent Items
+                  <span>Live System • 2 Urgent Items</span>
                 </span>
-                <Link to="/login" className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline hidden sm:inline">
+                <Link to="/login" className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline hidden md:inline">
                   Interactive App
                 </Link>
               </div>
             </div>
 
             {/* Simulated Live AfterBuy Dashboard Workspace */}
-            <div className="p-4 sm:p-6 space-y-6 bg-slate-50/40 dark:bg-[#11141A]/50">
+            <div className="p-4 sm:p-6 space-y-5 bg-[#F8FAFC]/50 dark:bg-[#0E1117]/60">
               
-              {/* Context Greeting Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 dark:border-[#22262F] pb-4">
-                <div>
-                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-[#F5F7FA]">
-                    Good morning, Alex
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-[#A9B0BC]">
-                    Here is what requires your attention across your purchases today.
-                  </p>
+              {/* Context Greeting Bar with User Avatar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/60 dark:border-white/10 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-sm flex items-center justify-center shadow-xs ring-2 ring-blue-500/20 shrink-0">
+                    {isAuthenticated ? (
+                      user?.avatar ? (
+                        <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        initials
+                      )
+                    ) : (
+                      'AB'
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#F5F7FA]">
+                        {isAuthenticated ? `Welcome back, ${firstName || 'User'}` : 'Interactive Dashboard Simulator'}
+                      </h3>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                        isAuthenticated
+                          ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60'
+                          : 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border-blue-200/80 dark:border-blue-900/50'
+                      }`}>
+                        {isAuthenticated ? `${purchases.length} Purchases in Cloud • Live Sync` : 'Demo Session • Active Mode'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-[#A9B0BC] mt-0.5">
+                      {isAuthenticated
+                        ? `${urgentCount} items need attention • ₹${totalPendingRefundAmount.toLocaleString('en-IN')} pending recovery`
+                        : 'Previewing how AfterBuy automatically tracks return windows, alerts deadlines, and recovers refunds.'}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-slate-400 dark:text-[#747C89]">Demo Session</span>
-                  <Link to="/signup">
-                    <Button variant="primary" size="small" className="text-xs py-1 px-3">
-                      + Add Purchase
-                    </Button>
-                  </Link>
+
+                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                  {isAuthenticated ? (
+                    <>
+                      <Link to="/app/purchases/new">
+                        <Button variant="primary" size="small" className="text-xs py-1.5 px-3.5 shadow-sm">
+                          + Add Purchase
+                        </Button>
+                      </Link>
+                      <Link to="/app/dashboard">
+                        <Button variant="outline" size="small" className="text-xs py-1.5 px-3.5">
+                          Open App →
+                        </Button>
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-[11px] text-slate-400 dark:text-[#747C89] hidden sm:inline">Interactive Preview</span>
+                      <Link to="/signup">
+                        <Button variant="primary" size="small" className="text-xs py-1.5 px-3.5 shadow-sm">
+                          Get Started Free →
+                        </Button>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
 
-              {/* ACTION REQUIRED BANNER (Matches actual DashboardPage) */}
-              <div className="rounded-xl border border-amber-200/90 dark:border-amber-900/60 bg-amber-50/80 dark:bg-amber-950/25 p-4 shadow-xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 shrink-0">
-                      <AlertTriangle className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900 dark:text-amber-200 bg-amber-200/60 dark:bg-amber-900/50 px-2 py-0.5 rounded">
-                          Action Required
-                        </span>
-                        <span className="text-xs font-semibold text-amber-950 dark:text-amber-100">
-                          2 items need your immediate action
-                        </span>
+              {/* ACTION REQUIRED INTELLIGENCE BANNER */}
+              {isAuthenticated ? (
+                urgentCount > 0 ? (
+                  <div className="rounded-xl border border-amber-300/80 dark:border-amber-500/30 bg-gradient-to-r from-amber-50/90 via-amber-50/40 to-transparent dark:from-amber-950/30 dark:via-amber-950/15 dark:to-transparent p-4 shadow-xs">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 shrink-0 mt-0.5 ring-1 ring-amber-400/30">
+                          <AlertTriangle className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-900 dark:text-amber-200 bg-amber-200/70 dark:bg-amber-900/60 px-2 py-0.5 rounded-md">
+                              Action Required
+                            </span>
+                            <span className="text-xs font-bold text-amber-950 dark:text-amber-100">
+                              {urgentCount} {urgentCount === 1 ? 'item needs' : 'items need'} your immediate attention
+                            </span>
+                          </div>
+                          <div className="text-xs text-amber-900/90 dark:text-amber-200/90 mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            {urgentReturns.slice(0, 2).map((item, idx) => (
+                              <span key={item.id} className="inline-flex items-center gap-1.5 bg-white/70 dark:bg-black/30 px-2 py-0.5 rounded border border-amber-300/60 dark:border-amber-700/40">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                                <strong>{item.name}</strong> — deadline {item.deadlineText?.toLowerCase() || 'approaching'}
+                              </span>
+                            ))}
+                            {overdueRefunds.slice(0, 1).map((ref) => (
+                              <span key={ref.id} className="inline-flex items-center gap-1.5 bg-white/70 dark:bg-black/30 px-2 py-0.5 rounded border border-amber-300/60 dark:border-amber-700/40">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                <strong>{ref.name}</strong> — refund overdue
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-xs text-amber-900/90 dark:text-amber-200/90 mt-1">
-                        <strong>Sony WH-1000XM4</strong> return closes tomorrow • <strong>Logitech MX Master 3S</strong> refund of ₹7,995 is overdue
-                      </p>
+                      
+                      <Link to="/app/returns" className="shrink-0 self-start md:self-center">
+                        <Button variant="primary" size="small" className="bg-amber-600 hover:bg-amber-700 text-white text-xs py-1.5 px-3 whitespace-nowrap shadow-xs">
+                          Review {urgentCount} Items →
+                        </Button>
+                      </Link>
                     </div>
                   </div>
-                  <Link to="/signup" className="shrink-0 self-start sm:self-center">
-                    <Button variant="primary" size="small" className="bg-amber-600 hover:bg-amber-700 text-white text-xs py-1 px-2.5">
-                      Review Items →
-                    </Button>
-                  </Link>
+                ) : (
+                  <div className="rounded-xl border border-emerald-300/80 dark:border-emerald-500/30 bg-gradient-to-r from-emerald-50/90 via-emerald-50/30 to-transparent dark:from-emerald-950/30 dark:via-emerald-950/15 dark:to-transparent p-3.5 sm:p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 shrink-0">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
+                          All Purchases Protected & On Track
+                        </div>
+                        <p className="text-[11px] text-emerald-800/80 dark:text-emerald-300/80 mt-0.5">
+                          Zero return deadlines expiring in the next 48 hours. All active warranties and refunds are monitored.
+                        </p>
+                      </div>
+                    </div>
+                    <Link to="/app/purchases" className="shrink-0">
+                      <Button variant="outline" size="small" className="text-xs py-1 px-3">
+                        View All Purchases →
+                      </Button>
+                    </Link>
+                  </div>
+                )
+              ) : (
+                /* Guest Simulator Mode */
+                <div className="rounded-xl border border-amber-300/80 dark:border-amber-500/30 bg-gradient-to-r from-amber-50/90 via-amber-50/40 to-transparent dark:from-amber-950/30 dark:via-amber-950/15 dark:to-transparent p-4 shadow-xs">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3.5">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 shrink-0 mt-0.5 ring-1 ring-amber-400/30">
+                        <AlertTriangle className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-900 dark:text-amber-200 bg-amber-200/70 dark:bg-amber-900/60 px-2 py-0.5 rounded-md">
+                            High Priority Alert
+                          </span>
+                          <span className="text-xs font-bold text-amber-950 dark:text-amber-100">
+                            2 items require your attention today
+                          </span>
+                        </div>
+                        <div className="text-xs text-amber-900/90 dark:text-amber-200/90 mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="inline-flex items-center gap-1.5 bg-white/70 dark:bg-black/30 px-2 py-0.5 rounded border border-amber-300/60 dark:border-amber-700/40">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                            <strong>Sony WH-1000XM4</strong> return window closes tomorrow
+                          </span>
+                          <span className="text-amber-400 hidden sm:inline">•</span>
+                          <span className="inline-flex items-center gap-1.5 bg-white/70 dark:bg-black/30 px-2 py-0.5 rounded border border-amber-300/60 dark:border-amber-700/40">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                            <strong>Logitech MX Master 3S</strong> refund of ₹7,995 is overdue
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <Link to="/signup" className="shrink-0 self-start md:self-center">
+                      <Button variant="primary" size="small" className="bg-amber-600 hover:bg-amber-700 text-white text-xs py-1.5 px-3 whitespace-nowrap shadow-xs">
+                        Try Live System →
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* 4 CORE KPI STAT CARDS */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <div className="rounded-xl border border-slate-200/80 dark:border-[#292E38] bg-white dark:bg-[#171A21] p-4 shadow-xs">
+                
+                {/* Card 1: Pending Refunds */}
+                <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#141820] p-4 shadow-xs hover:border-amber-400/40 transition-all">
                   <div className="flex items-center justify-between text-slate-500 dark:text-[#A9B0BC] text-xs font-medium">
                     <span>Pending Refunds</span>
-                    <BadgePercent className="w-4 h-4 text-amber-500" />
+                    <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400">
+                      <BadgePercent className="w-3.5 h-3.5" />
+                    </div>
                   </div>
-                  <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F5F7FA] mt-1">
-                    ₹14,299
+                  <div className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-[#F5F7FA] mt-2">
+                    {isAuthenticated ? `₹${totalPendingRefundAmount.toLocaleString('en-IN')}` : '₹14,299'}
                   </div>
-                  <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5 font-medium">
-                    1 overdue from Croma
-                  </p>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold truncate">
+                      {isAuthenticated
+                        ? (overdueRefunds.length > 0 ? `${overdueRefunds.length} overdue` : 'All refunds tracked')
+                        : '1 overdue from Croma'}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200/80 dark:border-[#292E38] bg-white dark:bg-[#171A21] p-4 shadow-xs">
+                {/* Card 2: Active Return Windows */}
+                <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#141820] p-4 shadow-xs hover:border-blue-400/40 transition-all">
                   <div className="flex items-center justify-between text-slate-500 dark:text-[#A9B0BC] text-xs font-medium">
                     <span>Active Return Windows</span>
-                    <RotateCcw className="w-4 h-4 text-blue-500" />
+                    <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </div>
                   </div>
-                  <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F5F7FA] mt-1">
-                    3 items
+                  <div className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-[#F5F7FA] mt-2">
+                    {isAuthenticated ? `${approachingReturnItems.length} items` : '3 items'}
                   </div>
-                  <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-0.5 font-medium">
-                    Earliest ends tomorrow
-                  </p>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                    <p className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold truncate">
+                      {isAuthenticated
+                        ? (urgentReturns.length > 0 ? 'Deadline approaching' : 'Active monitoring')
+                        : 'Earliest ends tomorrow'}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200/80 dark:border-[#292E38] bg-white dark:bg-[#171A21] p-4 shadow-xs">
+                {/* Card 3: Active Warranties */}
+                <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#141820] p-4 shadow-xs hover:border-emerald-400/40 transition-all">
                   <div className="flex items-center justify-between text-slate-500 dark:text-[#A9B0BC] text-xs font-medium">
                     <span>Active Warranties</span>
-                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                    <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                    </div>
                   </div>
-                  <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F5F7FA] mt-1">
-                    18 items
+                  <div className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-[#F5F7FA] mt-2">
+                    {isAuthenticated ? `${totalActiveWarranties} items` : '18 items'}
                   </div>
-                  <p className="text-[11px] text-slate-500 dark:text-[#A9B0BC] mt-0.5">
-                    1 expiring next month
-                  </p>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <p className="text-[11px] text-slate-500 dark:text-[#A9B0BC] truncate">
+                      {isAuthenticated ? 'In document vault' : '1 expiring next month'}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200/80 dark:border-[#292E38] bg-white dark:bg-[#171A21] p-4 shadow-xs">
+                {/* Card 4: Total Refunded */}
+                <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#141820] p-4 shadow-xs hover:border-cyan-400/40 transition-all">
                   <div className="flex items-center justify-between text-slate-500 dark:text-[#A9B0BC] text-xs font-medium">
                     <span>Total Refunded</span>
-                    <TrendingUp className="w-4 h-4 text-blue-500" />
+                    <div className="p-1.5 rounded-lg bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                    </div>
                   </div>
-                  <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#F5F7FA] mt-1">
-                    ₹31,480
+                  <div className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-[#F5F7FA] mt-2">
+                    {isAuthenticated ? `₹${totalRefundedAmount.toLocaleString('en-IN')}` : '₹31,480'}
                   </div>
-                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5 font-medium">
-                    100% recovered to bank
-                  </p>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold truncate">
+                      100% recovered to bank
+                    </p>
+                  </div>
                 </div>
+
               </div>
 
               {/* REAL DASHBOARD TABLE SNAPSHOT: Approaching Return Deadlines */}
-              <div className="rounded-xl border border-slate-200/80 dark:border-[#292E38] bg-white dark:bg-[#171A21] overflow-hidden shadow-xs w-full max-w-full">
-                <div className="px-4 py-3 border-b border-slate-100 dark:border-[#22262F] flex items-center justify-between bg-slate-50/50 dark:bg-[#13161C]">
+              <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#141820] overflow-hidden shadow-xs w-full max-w-full">
+                
+                {/* Table Header with Interactive Filter Tabs */}
+                <div className="px-4 py-3 border-b border-slate-100 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70 dark:bg-[#11141A]">
                   <div>
                     <h4 className="text-xs font-bold text-slate-900 dark:text-[#F5F7FA] uppercase tracking-wider">
-                      Approaching Return Deadlines
+                      {isAuthenticated ? 'Your Active Orders' : 'Approaching Return Deadlines'}
                     </h4>
                     <p className="text-[11px] text-slate-500 dark:text-[#A9B0BC]">
-                      Countdown timers actively running for verified orders
+                      {isAuthenticated
+                        ? 'Real-time monitoring directly from your MongoDB account'
+                        : 'Real-time countdown sentinels actively running for verified purchases'}
                     </p>
                   </div>
-                  <span className="text-[11px] text-blue-600 dark:text-blue-400 font-semibold shrink-0">
-                    Live Telemetry
-                  </span>
+
+                  {!isAuthenticated ? (
+                    /* Filter Pills for Guest */
+                    <div className="flex items-center gap-1 bg-slate-200/60 dark:bg-white/5 p-0.5 rounded-lg text-[11px] shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setDashboardFilter('all')}
+                        className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                          dashboardFilter === 'all'
+                            ? 'bg-white dark:bg-[#1E232E] text-slate-900 dark:text-[#F5F7FA] shadow-xs font-bold'
+                            : 'text-slate-500 dark:text-[#A9B0BC] hover:text-slate-900'
+                        }`}
+                      >
+                        All (3)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDashboardFilter('urgent')}
+                        className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                          dashboardFilter === 'urgent'
+                            ? 'bg-white dark:bg-[#1E232E] text-rose-600 dark:text-rose-400 shadow-xs font-bold'
+                            : 'text-slate-500 dark:text-[#A9B0BC] hover:text-slate-900'
+                        }`}
+                      >
+                        Urgent (2)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDashboardFilter('refunds')}
+                        className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                          dashboardFilter === 'refunds'
+                            ? 'bg-white dark:bg-[#1E232E] text-amber-600 dark:text-amber-400 shadow-xs font-bold'
+                            : 'text-slate-500 dark:text-[#A9B0BC] hover:text-slate-900'
+                        }`}
+                      >
+                        Refunds (1)
+                      </button>
+                    </div>
+                  ) : (
+                    <Link to="/app/purchases" className="text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline shrink-0">
+                      View All in App →
+                    </Link>
+                  )}
                 </div>
 
-                <div className="divide-y divide-slate-100 dark:divide-[#22262F] text-xs">
-                  {/* Row 1: Urgent Return */}
-                  <div className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-[#1C2028]/50 transition-colors">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs shrink-0">
-                        WH
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-slate-900 dark:text-[#F5F7FA] flex flex-wrap items-center gap-1.5">
-                          <span className="truncate">Sony WH-1000XM4 Wireless Headphones</span>
-                          <span className="text-[10px] text-slate-400 font-normal shrink-0">#402-892182</span>
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-[#A9B0BC] flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                          <span>Amazon India</span>
-                          <span>•</span>
-                          <span className="font-medium text-slate-800 dark:text-slate-200">₹19,990</span>
-                          <span>•</span>
-                          <span>Delivered Aug 28</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 sm:gap-3 self-start sm:self-center shrink-0">
-                      <span className="text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-900/50">
-                        Tomorrow
-                      </span>
-                      <StatusBadge status="return-expiring" size="small" />
-                      <Link to="/signup">
-                        <Button variant="primary" size="small" className="text-xs py-1 px-2.5">
-                          Request Return
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
+                {/* Table Rows: Logged-in Real Data vs Guest Simulator */}
+                <div className="divide-y divide-slate-100 dark:divide-white/5 text-xs">
+                  
+                  {isAuthenticated ? (
+                    purchases.length > 0 ? (
+                      purchases.slice(0, 3).map((item) => (
+                        <div key={item.id} className="p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3.5 hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-colors">
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                              {item.name ? item.name.slice(0, 2).toUpperCase() : 'OR'}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-bold text-slate-900 dark:text-[#F5F7FA] flex flex-wrap items-center gap-2">
+                                <span className="truncate">{item.name}</span>
+                                {item.orderNumber && (
+                                  <span className="text-[10px] text-slate-400 font-mono font-normal">#{item.orderNumber}</span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-slate-500 dark:text-[#A9B0BC] flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                                <span className="font-semibold text-slate-800 dark:text-slate-200">{item.retailer || 'Store'}</span>
+                                <span>•</span>
+                                <span className="font-bold text-blue-600 dark:text-blue-400">
+                                  ₹{item.price ? Number(item.price).toLocaleString('en-IN') : '0'}
+                                </span>
+                                {item.deliveryDate && (
+                                  <>
+                                    <span>•</span>
+                                    <span>Delivered {new Date(item.deliveryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
 
-                  {/* Row 2: Eligible Return */}
-                  <div className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-[#1C2028]/50 transition-colors">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-[#1C2028] text-slate-700 dark:text-[#F5F7FA] flex items-center justify-center font-bold text-xs shrink-0">
-                        NK
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-slate-900 dark:text-[#F5F7FA] flex flex-wrap items-center gap-1.5">
-                          <span className="truncate">Nike Air Zoom Pegasus 40</span>
-                          <span className="text-[10px] text-slate-400 font-normal shrink-0">#MYN-772192</span>
+                          <div className="flex items-center gap-3 sm:gap-4 self-start md:self-center shrink-0">
+                            <StatusBadge status={item.status || 'return-eligible'} size="small" />
+                            <Link to={`/app/purchases/${item.id}`}>
+                              <Button variant="outline" size="small" className="text-xs py-1.5 px-3">
+                                View Order
+                              </Button>
+                            </Link>
+                          </div>
                         </div>
-                        <div className="text-[11px] text-slate-500 dark:text-[#A9B0BC] flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                          <span>Myntra</span>
-                          <span>•</span>
-                          <span className="font-medium text-slate-800 dark:text-slate-200">₹6,499</span>
-                          <span>•</span>
-                          <span>Delivered Aug 31</span>
+                      ))
+                    ) : (
+                      <div className="p-8 text-center space-y-3">
+                        <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
+                          <Package className="w-6 h-6" />
                         </div>
+                        <div>
+                          <h5 className="text-sm font-bold text-slate-900 dark:text-[#F5F7FA]">No Purchases Logged Yet</h5>
+                          <p className="text-xs text-slate-500 dark:text-[#A9B0BC] mt-0.5 max-w-sm mx-auto">
+                            Add your first purchase to start automated return window countdowns and warranty tracking.
+                          </p>
+                        </div>
+                        <Link to="/app/purchases/new">
+                          <Button variant="primary" size="small" className="text-xs py-1.5 px-4 shadow-sm">
+                            + Log First Purchase
+                          </Button>
+                        </Link>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 sm:gap-3 self-start sm:self-center shrink-0">
-                      <span className="text-xs font-medium text-slate-600 dark:text-[#A9B0BC]">
-                        4 days left
-                      </span>
-                      <StatusBadge status="return-eligible" size="small" />
-                      <Link to="/signup">
-                        <Button variant="outline" size="small" className="text-xs py-1 px-2.5">
-                          View Order
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
+                    )
+                  ) : (
+                    /* Guest Mode Rows with Interactive Filter */
+                    <>
+                      {/* Row 1: Sony Headphones (Urgent Return) */}
+                      {(dashboardFilter === 'all' || dashboardFilter === 'urgent') && (
+                        <div className="p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3.5 hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-colors">
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-[#FF9900]/10 border border-[#FF9900]/30 text-[#D97706] dark:text-[#F59E0B] flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                              AZ
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-bold text-slate-900 dark:text-[#F5F7FA] flex flex-wrap items-center gap-2">
+                                <span className="truncate">Sony WH-1000XM4 Wireless Headphones</span>
+                                <span className="text-[10px] text-slate-400 font-mono font-normal">#402-892182</span>
+                              </div>
+                              <div className="text-[11px] text-slate-500 dark:text-[#A9B0BC] flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                                <span className="font-semibold text-slate-800 dark:text-slate-200">Amazon India</span>
+                                <span>•</span>
+                                <span className="font-bold text-blue-600 dark:text-blue-400">₹19,990</span>
+                                <span>•</span>
+                                <span>Delivered Aug 28 (7-Day Policy)</span>
+                              </div>
+                            </div>
+                          </div>
 
-                  {/* Row 3: Overdue Refund Callout */}
-                  <div className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-[#1C2028]/50 transition-colors">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center font-bold text-xs shrink-0">
-                        MX
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-slate-900 dark:text-[#F5F7FA] flex flex-wrap items-center gap-1.5">
-                          <span className="truncate">Logitech MX Master 3S Mouse</span>
-                          <span className="text-[10px] text-slate-400 font-normal shrink-0">#CRO-18302</span>
+                          <div className="flex items-center gap-3 sm:gap-4 self-start md:self-center shrink-0">
+                            <div className="hidden lg:flex flex-col items-end gap-1">
+                              <div className="text-[10px] text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                                6 of 7 Days Passed
+                              </div>
+                              <div className="w-24 h-1.5 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+                                <div className="h-full bg-rose-500 rounded-full w-[85%]" />
+                              </div>
+                            </div>
+
+                            <span className="text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-md border border-rose-200 dark:border-rose-900/60 shadow-xs">
+                              Tomorrow (18h left)
+                            </span>
+
+                            <StatusBadge status="return-expiring" size="small" />
+
+                            <Link to="/signup">
+                              <Button variant="primary" size="small" className="text-xs py-1.5 px-3">
+                                Request Return
+                              </Button>
+                            </Link>
+                          </div>
                         </div>
-                        <div className="text-[11px] text-slate-500 dark:text-[#A9B0BC] flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                          <span>Croma Retail</span>
-                          <span>•</span>
-                          <span className="font-medium text-slate-800 dark:text-slate-200">₹7,995</span>
-                          <span>•</span>
-                          <span>Item Returned Aug 29</span>
+                      )}
+
+                      {/* Row 2: Nike Pegasus (Active Return Window) */}
+                      {(dashboardFilter === 'all') && (
+                        <div className="p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3.5 hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-colors">
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-[#FF3F6C]/10 border border-[#FF3F6C]/30 text-[#FF3F6C] flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                              MY
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-bold text-slate-900 dark:text-[#F5F7FA] flex flex-wrap items-center gap-2">
+                                <span className="truncate">Nike Air Zoom Pegasus 40 Running Shoes</span>
+                                <span className="text-[10px] text-slate-400 font-mono font-normal">#MYN-772192</span>
+                              </div>
+                              <div className="text-[11px] text-slate-500 dark:text-[#A9B0BC] flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                                <span className="font-semibold text-slate-800 dark:text-slate-200">Myntra Fashion</span>
+                                <span>•</span>
+                                <span className="font-bold text-blue-600 dark:text-blue-400">₹6,499</span>
+                                <span>•</span>
+                                <span>Delivered Aug 31 (14-Day Policy)</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 sm:gap-4 self-start md:self-center shrink-0">
+                            <div className="hidden lg:flex flex-col items-end gap-1">
+                              <div className="text-[10px] text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1">
+                                3 of 14 Days Passed
+                              </div>
+                              <div className="w-24 h-1.5 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+                                <div className="h-full bg-blue-500 rounded-full w-[25%]" />
+                              </div>
+                            </div>
+
+                            <span className="text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-1 rounded-md border border-blue-200 dark:border-blue-900/60">
+                              4 days left
+                            </span>
+
+                            <StatusBadge status="return-eligible" size="small" />
+
+                            <Link to="/signup">
+                              <Button variant="outline" size="small" className="text-xs py-1.5 px-3">
+                                View Order
+                              </Button>
+                            </Link>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 sm:gap-3 self-start sm:self-center shrink-0">
-                      <StatusBadge status="refund-overdue" size="small" />
-                      <Link to="/signup">
-                        <Button variant="danger" size="small" className="text-xs py-1 px-2.5">
-                          Flag Overdue
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
+                      )}
+
+                      {/* Row 3: Logitech Mouse (Overdue Refund) */}
+                      {(dashboardFilter === 'all' || dashboardFilter === 'urgent' || dashboardFilter === 'refunds') && (
+                        <div className="p-3.5 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3.5 hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-colors">
+                          <div className="flex items-center gap-3.5 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-600 dark:text-teal-400 flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                              CR
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-bold text-slate-900 dark:text-[#F5F7FA] flex flex-wrap items-center gap-2">
+                                <span className="truncate">Logitech MX Master 3S Ergonomic Mouse</span>
+                                <span className="text-[10px] text-slate-400 font-mono font-normal">#CRO-18302</span>
+                              </div>
+                              <div className="text-[11px] text-slate-500 dark:text-[#A9B0BC] flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                                <span className="font-semibold text-slate-800 dark:text-slate-200">Croma Retail</span>
+                                <span>•</span>
+                                <span className="font-bold text-rose-600 dark:text-rose-400">₹7,995 Expected</span>
+                                <span>•</span>
+                                <span>Pickup Completed Aug 29</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 sm:gap-4 self-start md:self-center shrink-0">
+                            <span className="text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-900/60">
+                              Overdue by 3 Days
+                            </span>
+
+                            <StatusBadge status="refund-overdue" size="small" />
+
+                            <Link to="/signup">
+                              <Button variant="danger" size="small" className="text-xs py-1.5 px-3 whitespace-nowrap">
+                                Flag Overdue
+                              </Button>
+                            </Link>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
                 </div>
               </div>
             </div>

@@ -152,6 +152,17 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const setSession = (newToken, newUser) => {
+    if (newToken) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
+      setToken(newToken);
+    }
+    if (newUser) {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser));
+      setUser(newUser);
+    }
+  };
+
   const updateUser = async (fields) => {
     setUser((prev) => (prev ? { ...prev, ...fields } : fields));
 
@@ -199,6 +210,7 @@ export const AuthProvider = ({ children }) => {
         signup,
         loginWithGoogle,
         updateUser,
+        setSession,
         logout,
       }}
     >

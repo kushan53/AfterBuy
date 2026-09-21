@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Truck,
-  Scan,
-  ShieldCheck,
-  PackageCheck,
-  CheckCircle2,
+  FileText,
   Clock,
-  ArrowRight,
-  Sparkles,
+  Bell,
   RotateCcw,
+  ShieldCheck,
+  CheckCircle2,
+  Sparkles,
   Play,
   Pause,
   ChevronRight,
-  Warehouse,
-  Coins
+  ArrowRight,
+  Shield,
+  Layers,
+  Calendar,
+  Banknote,
+  Check
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -25,86 +27,86 @@ export const InteractivePipelineShowcase = () => {
     {
       id: 0,
       number: '1',
-      title: 'Doorstep Delivery',
-      subtitle: 'Package unboxed • 7-day clock starts',
-      tag: 'Truck arrives',
-      icon: Truck,
-      status: 'Delivered • Window Active',
+      title: 'Ingestion & Policy Sync',
+      subtitle: 'Bill stored • Return window auto-calibrated',
+      tag: 'Order Ingested',
+      icon: FileText,
+      status: 'Window Active',
       statusColor: 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/50 border-blue-200 dark:border-blue-900/60',
-      telemetry: '09:41 AM • Order #AB-8821 verified • 7-Day return sentinel armed',
-      coordinates: { x: '8%', y: '40%' },
-      mobileCoords: { x: '10%', y: '10%' },
-      metric: '7 Days Left',
-      desc: 'AfterBuy captures the exact delivery timestamp and starts an automated countdown synced to the merchant\'s return policy.'
+      telemetry: '09:41 AM • Order added • Merchant 7-Day return policy calibrated from delivery timestamp',
+      systemAction: 'AfterBuy captures the purchase, parses the merchant\'s return policy (7, 10, 14, or 30 days), and securely saves the digital invoice in your vault.',
+      linkedFeature: 'Connected to Purchases & Document Vault',
+      linkedRoute: '/app/purchases',
+      metric: '7-Day Window Calibrated'
     },
     {
       id: 1,
       number: '2',
-      title: 'Return Sentinel',
-      subtitle: 'Auto-scan policy & 48h deadline alert',
-      tag: 'Policy scan',
-      icon: Scan,
-      status: 'Proactive Alert',
-      statusColor: 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/50 border-amber-200 dark:border-amber-900/60',
-      telemetry: '14:20 PM • Window alert triggered • 1-click return requested',
-      coordinates: { x: '27%', y: '16%' },
-      mobileCoords: { x: '10%', y: '30%' },
-      metric: '48h Reminder',
-      desc: 'Proactive alerts warn you before the return eligibility shuts. Request a return with 1 tap before it is too late.'
+      title: 'Live Return Sentinel',
+      subtitle: '24/7 background countdown • Zero manual tracking',
+      tag: 'Monitoring',
+      icon: Clock,
+      status: 'Live Countdown',
+      statusColor: 'text-sky-600 bg-sky-50 dark:text-sky-400 dark:bg-sky-950/50 border-sky-200 dark:border-sky-900/60',
+      telemetry: 'Day 3 • Live timer running • 4 Days remaining before return eligibility shuts',
+      systemAction: 'No need to set calendar reminders or calculate dates in your head. AfterBuy runs a real-time countdown timer tracking the exact remaining hours.',
+      linkedFeature: 'Active Dashboard Sentinel',
+      linkedRoute: '/app/dashboard',
+      metric: 'Countdown: 4 Days Left'
     },
     {
       id: 2,
       number: '3',
-      title: 'Doorstep Pickup',
-      subtitle: 'Courier collects & reverse AWB logged',
-      tag: 'Reverse transit',
-      icon: PackageCheck,
-      status: 'Pickup Completed',
-      statusColor: 'text-cyan-600 bg-cyan-50 dark:text-cyan-400 dark:bg-cyan-950/50 border-cyan-200 dark:border-cyan-900/60',
-      telemetry: '16:05 PM • BlueDart agent scanned AWB #BD-99104 • In reverse transit',
-      coordinates: { x: '47%', y: '44%' },
-      mobileCoords: { x: '10%', y: '50%' },
-      metric: 'In Reverse Transit',
-      desc: 'The pickup agent scans the item. AfterBuy securely stores the courier tracking receipt and logs expected refund turnaround.'
+      title: 'Proactive 48h Alert',
+      subtitle: 'Smart warning before return eligibility closes',
+      tag: 'Urgent Action',
+      icon: Bell,
+      status: 'Early Warning',
+      statusColor: 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/50 border-amber-200 dark:border-amber-900/60',
+      telemetry: 'Day 5 14:20 PM • 48h Warning sent • Prompt: Keep item or initiate return with merchant?',
+      systemAction: 'Before the merchant\'s return door shuts forever, AfterBuy alerts you so you can initiate a return or replacement before your hard-earned money gets trapped.',
+      linkedFeature: 'Urgent Attention System',
+      linkedRoute: '/app/returns',
+      metric: '48h Early Notification'
     },
     {
       id: 3,
       number: '4',
-      title: 'Merchant Hub Scan',
-      subtitle: 'Warehouse diagnostic & RMA match',
-      tag: 'Inspection pass',
-      icon: Warehouse,
-      status: 'Hub Inbound Verified',
+      title: 'Refund Reconciliation',
+      subtitle: 'Courier pickup logged • Bank credit verified',
+      tag: 'Bank Settlement',
+      icon: RotateCcw,
+      status: 'In Settlement',
       statusColor: 'text-indigo-600 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-950/50 border-indigo-200 dark:border-indigo-900/60',
-      telemetry: '18:30 PM • Package arrived at Amazon Hub • RMA matched • Refund approved',
-      coordinates: { x: '67%', y: '64%' },
-      mobileCoords: { x: '10%', y: '70%' },
-      metric: 'RMA Matched',
-      desc: 'The package arrives at the merchant\'s logistics center. Verification is passed, and merchant initiates the bank refund wire.'
+      telemetry: 'Day 7 16:30 PM • Courier pickup confirmed • Merchant approved • Refund tracked to bank',
+      systemAction: 'If you choose to return, AfterBuy logs the courier tracking receipt and tracks the expected refund amount until the money actually hits your bank account.',
+      linkedFeature: 'Connected to Refund Tracker',
+      linkedRoute: '/app/refunds',
+      metric: '100% Refund Reconciled'
     },
     {
       id: 4,
       number: '5',
-      title: '100% Refund in Bank',
-      subtitle: '₹19,990 credited • Money recovered',
-      tag: 'Settled to account',
-      icon: CheckCircle2,
-      status: 'Refund Settled',
+      title: 'Warranty & Bill Vault',
+      subtitle: '1 to 3 Year coverage • 1-Click invoice retrieval',
+      tag: 'Permanent Protection',
+      icon: ShieldCheck,
+      status: 'Warranty Active',
       statusColor: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800/60',
-      telemetry: 'Next Day 10:15 AM • IMPS Ref #991024 credited to HDFC Bank • ₹19,990 Recovered',
-      coordinates: { x: '86%', y: '36%' },
-      mobileCoords: { x: '10%', y: '90%' },
-      metric: '₹19,990 Recovered',
-      desc: 'The money hits your bank account. AfterBuy confirms the settlement so no refund ever goes missing unnoticed.'
+      telemetry: 'Return closed • Item kept • 1-Year manufacturer warranty activated • Invoice permanently preserved',
+      systemAction: 'Once the return window closes and you keep the item, AfterBuy seamlessly transitions to long-term warranty tracking with your original invoice always 1 click away for service claims.',
+      linkedFeature: 'Connected to Warranty & Document Vault',
+      linkedRoute: '/app/warranties',
+      metric: '1-Year Warranty Protected'
     }
   ];
 
-  // Auto-play stepper every 3.8 seconds
+  // Auto-play stepper every 4 seconds
   useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(() => {
       setActiveStep((prev) => (prev + 1) % stages.length);
-    }, 3800);
+    }, 4000);
     return () => clearInterval(interval);
   }, [isPlaying, stages.length]);
 
@@ -117,13 +119,13 @@ export const InteractivePipelineShowcase = () => {
       <div className="text-center max-w-3xl mx-auto mb-12">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 text-xs font-semibold border border-blue-200 dark:border-blue-900/60 mb-4">
           <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-          <span>Interactive Post-Purchase Sentinel</span>
+          <span>Automated Protection Engine</span>
         </div>
         <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-[#F5F7FA]">
-          Watch what happens to your order and refund in real-time.
+          How AfterBuy Protects Every Purchase You Make.
         </h2>
         <p className="mt-3 text-sm sm:text-base text-slate-600 dark:text-[#A9B0BC] leading-relaxed">
-          From the moment a package arrives at your door to the second your refund hits your bank account—AfterBuy tracks every milestone so zero money is lost.
+          From the second you add an invoice to the moment your warranty expires or your refund hits your bank—here is the automated step-by-step process running inside AfterBuy.
         </p>
       </div>
 
@@ -131,17 +133,17 @@ export const InteractivePipelineShowcase = () => {
       <div className="relative rounded-2xl border border-slate-200/90 dark:border-[#292E38] bg-white dark:bg-[#11141A] shadow-xl shadow-slate-900/5 dark:shadow-black/60 overflow-hidden">
         
         {/* Top Board Bar */}
-        <div className="px-4 py-3 bg-slate-50 dark:bg-[#13161C] border-b border-slate-200/80 dark:border-[#22262F] flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div className="px-4 sm:px-6 py-3 bg-slate-50 dark:bg-[#13161C] border-b border-slate-200/80 dark:border-[#22262F] flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2.5">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-600 text-white font-bold text-[11px] shadow-xs">
               AB
             </div>
             <span className="font-semibold text-slate-900 dark:text-[#F5F7FA]">
-              Hub Sentinel 01
+              AfterBuy Process Engine
             </span>
             <span className="text-slate-300 dark:text-[#292E38]">•</span>
             <span className="text-[11px] text-slate-500 dark:text-[#A9B0BC] hidden sm:inline">
-              Live Resolution Pathway
+              Live System Lifecycle Simulation
             </span>
           </div>
 
@@ -157,106 +159,27 @@ export const InteractivePipelineShowcase = () => {
 
             <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-200/80 dark:border-emerald-800/60">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Tracking 1 Order • SKU B07XJ8C8F5</span>
+              <span>Automated Protection Active</span>
             </div>
           </div>
         </div>
 
         {/* ========================================================================= */}
-        {/* CANVAS WORKSPACE (DESKTOP & TABLET PIPELINE VIEW) */}
+        {/* INTERACTIVE WORKFLOW CANVAS */}
         {/* ========================================================================= */}
-        <div className="relative w-full h-[460px] sm:h-[480px] lg:h-[500px] overflow-hidden select-none bg-[#FBFDFF] dark:bg-[#0E1117]">
+        <div className="p-4 sm:p-6 lg:p-8 bg-[#FBFDFF] dark:bg-[#0E1117] relative">
           
-          {/* Subtle Blueprint Grid Pattern */}
+          {/* Subtle Grid Pattern Background */}
           <div
-            className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-25"
+            className="absolute inset-0 pointer-events-none opacity-30 dark:opacity-20"
             style={{
               backgroundImage: 'radial-gradient(#94a3b8 1px, transparent 1px)',
               backgroundSize: '24px 24px'
             }}
           />
 
-          {/* Ambient Blueprint Guide Lines */}
-          <div className="absolute inset-x-0 top-1/4 border-b border-dashed border-slate-200/60 dark:border-[#1E232E] pointer-events-none" />
-          <div className="absolute inset-x-0 top-2/4 border-b border-dashed border-slate-200/60 dark:border-[#1E232E] pointer-events-none" />
-          <div className="absolute inset-x-0 top-3/4 border-b border-dashed border-slate-200/60 dark:border-[#1E232E] pointer-events-none" />
-
-          {/* SVG Pipelined Connecting Track */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="pipeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.4" />
-                <stop offset="50%" stopColor="#0284C7" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#10B981" stopOpacity="0.9" />
-              </linearGradient>
-              <pattern id="conveyorTicks" width="14" height="14" patternUnits="userSpaceOnUse">
-                <line x1="0" y1="0" x2="0" y2="14" stroke="#38BDF8" strokeWidth="1.5" strokeOpacity="0.4" />
-              </pattern>
-            </defs>
-
-            {/* Stepped Circuit Pipeline Route */}
-            <path
-              d="M 120 220 
-                 L 220 220 
-                 L 220 130 
-                 L 380 130 
-                 L 380 240 
-                 L 580 240 
-                 L 580 340 
-                 L 800 340 
-                 L 800 210 
-                 L 980 210"
-              fill="none"
-              stroke="#BAE6FD"
-              strokeWidth="20"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="dark:stroke-sky-950/60"
-            />
-            
-            {/* Ticks inside the track */}
-            <path
-              d="M 120 220 
-                 L 220 220 
-                 L 220 130 
-                 L 380 130 
-                 L 380 240 
-                 L 580 240 
-                 L 580 340 
-                 L 800 340 
-                 L 800 210 
-                 L 980 210"
-              fill="none"
-              stroke="#0284C7"
-              strokeWidth="14"
-              strokeDasharray="4 8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="opacity-60 dark:opacity-80"
-            />
-
-            {/* Active Glow Pulse Path */}
-            <path
-              d="M 120 220 
-                 L 220 220 
-                 L 220 130 
-                 L 380 130 
-                 L 380 240 
-                 L 580 240 
-                 L 580 340 
-                 L 800 340 
-                 L 800 210 
-                 L 980 210"
-              fill="none"
-              stroke="url(#pipeGradient)"
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-
-          {/* 5 CHECKPOINT STATIONS (Exact aesthetic from reference) */}
-          <div className="relative w-full h-full">
+          {/* 5-STAGE PROGRESSION CARDS (Responsive Grid with clean spacing, no clipping) */}
+          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4 mb-6">
             {stages.map((stage, idx) => {
               const isActive = activeStep === idx;
               const isPassed = activeStep > idx;
@@ -269,51 +192,58 @@ export const InteractivePipelineShowcase = () => {
                     setActiveStep(idx);
                     setIsPlaying(false);
                   }}
-                  style={{
-                    left: stage.coordinates.x,
-                    top: stage.coordinates.y,
-                    transform: 'translate(-50%, -50%)',
-                  }}
                   className={cn(
-                    "absolute z-10 w-48 sm:w-56 p-3 sm:p-3.5 rounded-xl border bg-white/95 dark:bg-[#151921]/95 backdrop-blur-sm cursor-pointer transition-all duration-300 select-none",
+                    "relative p-4 rounded-xl border transition-all duration-200 cursor-pointer select-none flex flex-col justify-between",
                     isActive
-                      ? "border-l-[5px] border-l-blue-600 dark:border-l-blue-400 border-slate-300 dark:border-[#383F4D] shadow-xl shadow-blue-600/15 scale-105 ring-2 ring-blue-500/20"
+                      ? "bg-white dark:bg-[#151921] border-blue-500/80 dark:border-blue-500 shadow-lg shadow-blue-500/10 ring-2 ring-blue-500/20 scale-[1.02]"
                       : isPassed
-                      ? "border-l-[4px] border-l-emerald-500 border-slate-200 dark:border-[#22262F] opacity-90 hover:opacity-100 hover:border-slate-300"
-                      : "border-slate-200/80 dark:border-[#22262F] opacity-60 hover:opacity-90"
+                      ? "bg-white/80 dark:bg-[#13161C]/80 border-slate-200 dark:border-[#22262F] hover:border-slate-300 dark:hover:border-[#2E3542]"
+                      : "bg-white/50 dark:bg-[#11141A]/50 border-slate-200/60 dark:border-[#1E232C] opacity-70 hover:opacity-100"
                   )}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="text-[13px] font-bold text-slate-900 dark:text-[#F5F7FA] tracking-tight truncate">
-                        {stage.number}. {stage.title}
-                      </div>
-                      <div className="text-[11px] text-slate-500 dark:text-[#A9B0BC] truncate mt-0.5">
-                        {stage.subtitle}
+                  {/* Step Header */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span
+                        className={cn(
+                          "flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold transition-colors",
+                          isActive
+                            ? "bg-blue-600 text-white"
+                            : isPassed
+                            ? "bg-emerald-500 text-white"
+                            : "bg-slate-100 text-slate-500 dark:bg-[#1F242E] dark:text-[#A9B0BC]"
+                        )}
+                      >
+                        {isPassed ? <Check className="w-3.5 h-3.5" /> : stage.number}
+                      </span>
+
+                      <div
+                        className={cn(
+                          "flex h-7 w-7 items-center justify-center rounded-lg transition-colors",
+                          isActive
+                            ? "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
+                            : "bg-slate-50 text-slate-400 dark:bg-[#171A21] dark:text-[#747C89]"
+                        )}
+                      >
+                        <Icon className="w-4 h-4" />
                       </div>
                     </div>
 
-                    <div
-                      className={cn(
-                        "flex h-6 w-6 items-center justify-center rounded-lg text-xs shrink-0 transition-colors",
-                        isActive
-                          ? "bg-blue-600 text-white shadow-xs"
-                          : isPassed
-                          ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400"
-                          : "bg-slate-100 text-slate-400 dark:bg-[#1F242E] dark:text-[#747C89]"
-                      )}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                    </div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-[#F5F7FA] tracking-tight">
+                      {stage.title}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-[#A9B0BC] mt-1 leading-snug">
+                      {stage.subtitle}
+                    </p>
                   </div>
 
-                  {/* Active Indicator & Metric Badge */}
-                  <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-[#22262F] flex items-center justify-between text-[10px]">
-                    <span className={cn("font-semibold px-2 py-0.5 rounded-full border", stage.statusColor)}>
+                  {/* Stage Tag & Active Marker */}
+                  <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-[#22262F] flex items-center justify-between">
+                    <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full border", stage.statusColor)}>
                       {stage.tag}
                     </span>
                     {isActive && (
-                      <span className="flex items-center gap-1 font-bold text-blue-600 dark:text-blue-400">
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400">
                         <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping" />
                         Active
                       </span>
@@ -322,42 +252,69 @@ export const InteractivePipelineShowcase = () => {
                 </div>
               );
             })}
+          </div>
 
-            {/* ANIMATED MOVING PARCEL (📦) */}
-            <div
-              style={{
-                left: current.coordinates.x,
-                top: current.coordinates.y,
-                transform: 'translate(-50%, -155%)',
-                transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)'
-              }}
-              className="absolute z-20 pointer-events-none flex flex-col items-center"
-            >
-              {/* 3D Parcel Box Badge */}
-              <div className="relative flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-400 text-amber-950 shadow-lg shadow-amber-500/30 border-2 border-white dark:border-slate-800 animate-bounce">
-                <span className="text-xl">📦</span>
+          {/* ========================================================================= */}
+          {/* LIVE SYSTEM TELEMETRY TERMINAL (ACTIVE STAGE MONITOR) */}
+          {/* ========================================================================= */}
+          <div className="relative z-10 rounded-xl border border-blue-100 dark:border-[#22262F] bg-white/95 dark:bg-[#13161C]/95 p-4 sm:p-5 backdrop-blur-sm shadow-xs">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              
+              {/* Left Details */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-mono text-[11px] font-semibold border border-blue-200/80 dark:border-blue-900/50">
+                    Stage {current.number} of 5
+                  </span>
+                  <span className="text-xs font-bold text-slate-900 dark:text-[#F5F7FA]">
+                    {current.title}
+                  </span>
+                  <span className="text-slate-300 dark:text-[#292E38]">•</span>
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    {current.linkedFeature}
+                  </span>
+                </div>
+
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-[#A9B0BC] leading-relaxed max-w-4xl">
+                  {current.systemAction}
+                </p>
+
+                {/* Simulated Telemetry Log */}
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-[#747C89] pt-1">
+                  <Clock className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                  <span className="font-mono truncate">{current.telemetry}</span>
+                </div>
               </div>
-              <div className="w-2.5 h-1 rounded-full bg-slate-900/30 dark:bg-black/50 blur-[1px] mt-0.5" />
-            </div>
 
-            {/* Bottom Forklift/Truck Decoration (Just like screenshot) */}
-            <div className="absolute right-8 bottom-12 hidden lg:flex items-center gap-2 opacity-80 pointer-events-none">
-              <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-[#171A21] border border-slate-200 dark:border-[#22262F] text-[11px] text-slate-500 dark:text-[#A9B0BC]">
-                <Truck className="w-3.5 h-3.5 text-blue-500" />
-                <span>Automated Reverse Hub</span>
+              {/* Right Metric Pill & Next Step Button */}
+              <div className="flex items-center gap-2.5 shrink-0">
+                <div className="px-3 py-2 rounded-lg bg-slate-50 dark:bg-[#181C24] border border-slate-200/80 dark:border-[#292E38] text-right">
+                  <div className="text-[10px] text-slate-400 dark:text-[#747C89]">Stage Output</div>
+                  <div className="text-xs font-bold text-blue-600 dark:text-blue-400 font-mono">
+                    {current.metric}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveStep((prev) => (prev + 1) % stages.length);
+                    setIsPlaying(false);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                >
+                  <span>Next Step</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
-            </div>
 
-            {/* Live Telemetry Status Bar (Bottom left of canvas) */}
-            <div className="absolute left-6 bottom-4 flex items-center gap-2 text-[11px] text-slate-500 dark:text-[#A9B0BC]">
-              <Clock className="w-3.5 h-3.5 text-blue-500" />
-              <span className="font-mono">{current.telemetry}</span>
             </div>
           </div>
+
         </div>
 
         {/* ========================================================================= */}
-        {/* BOTTOM INTERACTIVE 5-STEP CONTROLLER TABS */}
+        {/* BOTTOM CONTROLLER STEPPER BAR */}
         {/* ========================================================================= */}
         <div className="border-t border-slate-200/80 dark:border-[#22262F] bg-slate-50/70 dark:bg-[#13161C] grid grid-cols-2 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/80 dark:divide-[#22262F]">
           {stages.map((stage, idx) => {
@@ -373,30 +330,30 @@ export const InteractivePipelineShowcase = () => {
                   setIsPlaying(false);
                 }}
                 className={cn(
-                  "p-3.5 sm:p-4 text-left transition-all duration-150 cursor-pointer group flex flex-col justify-between",
+                  "p-3 sm:p-3.5 text-left transition-all duration-150 cursor-pointer group flex flex-col justify-between",
                   isActive
                     ? "bg-white dark:bg-[#171A21] shadow-inner"
                     : "hover:bg-slate-100/70 dark:hover:bg-[#181C24]"
                 )}
               >
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2">
                   <div
                     className={cn(
-                      "flex h-7 w-7 items-center justify-center rounded-lg transition-colors shrink-0",
+                      "flex h-6 w-6 items-center justify-center rounded-md transition-colors shrink-0",
                       isActive
                         ? "bg-blue-600 text-white shadow-xs"
-                        : "bg-slate-200/80 dark:bg-[#1F242E] text-slate-500 dark:text-[#A9B0BC] group-hover:text-slate-800 dark:group-hover:text-[#F5F7FA]"
+                        : "bg-slate-200/80 dark:bg-[#1F242E] text-slate-500 dark:text-[#A9B0BC]"
                     )}
                   >
-                    <Icon className="w-3.5 h-3.5" />
+                    <Icon className="w-3 h-3" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div
                       className={cn(
-                        "text-xs font-bold truncate",
+                        "text-[11px] font-bold truncate",
                         isActive
                           ? "text-blue-600 dark:text-blue-400"
-                          : "text-slate-800 dark:text-[#F5F7FA]"
+                          : "text-slate-700 dark:text-[#F5F7FA]"
                       )}
                     >
                       {stage.number}. {stage.title}
@@ -407,8 +364,8 @@ export const InteractivePipelineShowcase = () => {
                   </div>
                 </div>
 
-                {/* Bottom Active Pill Indicator */}
-                <div className="mt-2.5 w-full bg-slate-200/70 dark:bg-[#22262F] h-1 rounded-full overflow-hidden">
+                {/* Progress bar line */}
+                <div className="mt-2 w-full bg-slate-200/70 dark:bg-[#22262F] h-1 rounded-full overflow-hidden">
                   <div
                     className={cn(
                       "h-full rounded-full transition-all duration-300",
@@ -419,19 +376,6 @@ export const InteractivePipelineShowcase = () => {
               </button>
             );
           })}
-        </div>
-
-        {/* Detailed Explanation Drawer for Active Step */}
-        <div className="px-5 py-3.5 bg-blue-50/50 dark:bg-blue-950/20 border-t border-blue-100 dark:border-blue-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-slate-700 dark:text-[#F5F7FA]">
-            <span className="font-bold text-blue-600 dark:text-blue-400">Step {current.number}:</span>
-            <span className="text-slate-600 dark:text-[#A9B0BC]">{current.desc}</span>
-          </div>
-
-          <div className="inline-flex items-center gap-2 text-[11px] font-bold text-blue-700 dark:text-blue-300 shrink-0">
-            <span>Stage Metric: {current.metric}</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </div>
         </div>
 
       </div>

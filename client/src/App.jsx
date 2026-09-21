@@ -11,6 +11,7 @@ import { GuestRoute, ProtectedRoute } from './components/auth/RouteGuards';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { DesignSystemReviewPage } from './pages/DesignSystemReviewPage';
 import { PurchasesPage } from './pages/PurchasesPage';
@@ -54,6 +55,14 @@ export function App() {
                 element={
                   <GuestRoute>
                     <SignupPage />
+                  </GuestRoute>
+                }
+              />
+              <Route
+                path="/reset-password"
+                element={
+                  <GuestRoute>
+                    <ResetPasswordPage />
                   </GuestRoute>
                 }
               />

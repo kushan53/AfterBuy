@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../ui/Toast';
 
-export const GoogleSignInButton = ({ label = 'Sign in with Google' }) => {
+export const GoogleSignInButton = ({ label = 'Continue with Google' }) => {
   const navigate = useNavigate();
   const { loginWithGoogle } = useAuth();
   const { addToast } = useToast();
@@ -131,10 +131,10 @@ export const GoogleSignInButton = ({ label = 'Sign in with Google' }) => {
         id="google-signin-btn"
         onClick={handleGoogleClick}
         disabled={loading}
-        className="w-full h-11 px-4 rounded-xl border border-slate-200/90 dark:border-[#2D333F] bg-white dark:bg-[#13161C] hover:bg-slate-50 dark:hover:bg-[#1A1D24] text-slate-700 dark:text-[#E6EAF2] hover:text-slate-900 dark:hover:text-white font-medium text-xs shadow-xs hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-150 flex items-center justify-center gap-3 cursor-pointer select-none active:scale-[0.99] disabled:opacity-60"
+        className="w-full h-11 px-4 rounded-xl border border-slate-200/90 dark:border-[#2D333F] bg-white dark:bg-[#13161C] hover:bg-slate-50 dark:hover:bg-[#1A1E27] text-slate-700 dark:text-[#E6EAF2] hover:text-slate-900 dark:hover:text-white font-medium text-sm shadow-xs hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-150 flex items-center justify-center gap-3 cursor-pointer select-none active:scale-[0.99] disabled:opacity-60"
       >
         {/* Crisp Multicolor Google G Logo SVG */}
-        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+        <svg className="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24">
           <path
             fill="#4285F4"
             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"

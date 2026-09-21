@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 const userSchema = new mongoose.Schema(
   {
@@ -58,6 +59,22 @@ const userSchema = new mongoose.Schema(
       overdueRefundAlerts: { type: Boolean, default: true },
       whatsappUpdates: { type: Boolean, default: true },
     },
+    resetPasswordToken: {
+      type: String,
+      default: null,
+    },
+    resetPasswordExpire: {
+      type: Date,
+      default: null,
+    },
+    resetPasswordOtp: {
+      type: String,
+      default: null,
+    },
+    resetPasswordOtpExpire: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -77,6 +94,31 @@ userSchema.pre('save', async function (next) {
 // Compare password helper
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Generate and hash password reset token (15-min validity)
+userSchema.methods.getResetPasswordToken = function () {
+  // Generate random 32-byte string
+  const resetToken = crypto.randomBytes(32).toString('hex');
+
+  // Hash token using SHA-256 and store in DB
+  this.resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  // Set expire time to 15 minutes from now
+  this.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
+
+  return resetToken;
+};
+
+// Generate 6-digit OTP for password reset (10-min validity)
+userSchema.methods.getResetPasswordOtp = function () {
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  this.resetPasswordOtp = otp;
+  this.resetPasswordOtpExpire = Date.now() + 10 * 60 * 1000;
+  return otp;
 };
 
 export const User = mongoose.model('User', userSchema);
