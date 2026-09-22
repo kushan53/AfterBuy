@@ -31,8 +31,16 @@ const userSchema = new mongoose.Schema(
     },
     provider: {
       type: String,
-      enum: ['local', 'google'],
+      enum: ['local', 'google', 'email_otp'],
       default: 'local',
+    },
+    loginOtp: {
+      type: String,
+      default: null,
+    },
+    loginOtpExpire: {
+      type: Date,
+      default: null,
     },
     phone: {
       type: String,
@@ -54,6 +62,24 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: 'INR (₹)',
     },
+    plan: {
+      type: String,
+      enum: ['free', 'pro'],
+      default: 'free',
+    },
+    planBillingCycle: {
+      type: String,
+      enum: ['monthly', 'annual', 'lifetime'],
+      default: 'monthly',
+    },
+    planStartedAt: {
+      type: Date,
+      default: null,
+    },
+    planExpiresAt: {
+      type: Date,
+      default: null,
+    },
     notifications: {
       urgentReturnAlerts: { type: Boolean, default: true },
       overdueRefundAlerts: { type: Boolean, default: true },
@@ -72,6 +98,14 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
     resetPasswordOtpExpire: {
+      type: Date,
+      default: null,
+    },
+    previousOtp: {
+      type: String,
+      default: null,
+    },
+    previousOtpExpire: {
       type: Date,
       default: null,
     },
@@ -113,12 +147,65 @@ userSchema.methods.getResetPasswordToken = function () {
   return resetToken;
 };
 
-// Generate 6-digit OTP for password reset (10-min validity)
+// Generate 6-digit OTP for password reset (10-min validity) - strictly latest only
 userSchema.methods.getResetPasswordOtp = function () {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expireTime = Date.now() + 10 * 60 * 1000;
+  
+  // Strictly invalidate any previous code
+  this.previousOtp = undefined;
+  this.previousOtpExpire = undefined;
+  
   this.resetPasswordOtp = otp;
-  this.resetPasswordOtpExpire = Date.now() + 10 * 60 * 1000;
+  this.loginOtp = otp; // Keep login and reset OTP in sync
+  this.resetPasswordOtpExpire = expireTime;
+  this.loginOtpExpire = expireTime;
   return otp;
 };
 
+// Generate 6-digit OTP for 1-Day passwordless login (10-min validity) - strictly latest only
+userSchema.methods.getLoginOtp = function () {
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expireTime = Date.now() + 10 * 60 * 1000;
+  
+  // Strictly invalidate any previous code
+  this.previousOtp = undefined;
+  this.previousOtpExpire = undefined;
+  
+  this.loginOtp = otp;
+  this.resetPasswordOtp = otp; // Keep login and reset OTP in sync
+  this.loginOtpExpire = expireTime;
+  this.resetPasswordOtpExpire = expireTime;
+  return otp;
+};
+
+// Validate candidate OTP against ONLY the latest active OTP
+userSchema.methods.isValidOtp = function (candidateOtp) {
+  if (!candidateOtp) return false;
+  const clean = candidateOtp.toString().trim();
+  const now = Date.now();
+
+  // ONLY accept the single latest active OTP
+  if (this.resetPasswordOtp === clean && this.resetPasswordOtpExpire && this.resetPasswordOtpExpire > now) {
+    return true;
+  }
+
+  if (this.loginOtp === clean && this.loginOtpExpire && this.loginOtpExpire > now) {
+    return true;
+  }
+
+  return false;
+};
+
+// Clear all active OTPs once successfully verified
+userSchema.methods.clearAllOtps = function () {
+  this.loginOtp = undefined;
+  this.loginOtpExpire = undefined;
+  this.resetPasswordOtp = undefined;
+  this.resetPasswordOtpExpire = undefined;
+  this.previousOtp = undefined;
+  this.previousOtpExpire = undefined;
+};
+
 export const User = mongoose.model('User', userSchema);
+

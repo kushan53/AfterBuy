@@ -78,6 +78,7 @@ html {
   max-width: 100%;
   width: 100%;
   min-width: 320px;
+  scroll-padding-top: 5rem;
 }
 
 body {

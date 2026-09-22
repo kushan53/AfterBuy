@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Bell, Menu, Plus, Command, Sun, Moon, Laptop, Check, User, Settings, LogOut, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Search, Bell, Menu, Plus, Command, Sun, Moon, Laptop, Check, User, Settings, LogOut, CheckCircle2, ArrowLeft, Crown, Sparkles } from 'lucide-react';
 import { Dropdown, DropdownItem, DropdownSeparator, DropdownLabel } from '../ui/Dropdown';
 import { Button } from '../ui/Button';
 import { CommandPalette } from './CommandPalette';
+import { UpgradePlanModal } from '../subscription/UpgradePlanModal';
 import { useAuth } from '../../context/AuthContext';
 import { usePurchases } from '../../context/PurchaseContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -13,11 +14,12 @@ export const Topbar = ({ onMenuClick, onQuickAddClick }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const { user, initials, logout } = useAuth();
+  const { user, initials, logout, isPro } = useAuth();
   const { urgentReturns, overdueRefunds, expiringWarrantiesList } = usePurchases();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
   const [readNotificationIds, setReadNotificationIds] = useState([]);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   // Compute real notifications dynamically from the user's active database items
   const activeNotifications = useMemo(() => {
@@ -98,7 +100,7 @@ export const Topbar = ({ onMenuClick, onQuickAddClick }) => {
   return (
     <>
       <CommandPalette isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
-      <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b border-slate-200/80 dark:border-[#22262F] bg-white/95 dark:bg-[#11141A]/95 backdrop-blur-sm px-4 sm:px-6 lg:px-8 transition-colors duration-200">
+      <header className="fixed top-0 left-0 right-0 lg:left-64 z-20 flex h-16 items-center justify-between border-b border-slate-200/80 dark:border-[#22262F] bg-white/95 dark:bg-[#11141A]/95 backdrop-blur-md px-4 sm:px-6 lg:px-8 transition-colors duration-200">
         {/* Left side: Hamburger (mobile) + Breadcrumb Context */}
         <div className="flex items-center gap-3">
           <button
@@ -260,6 +262,23 @@ export const Topbar = ({ onMenuClick, onQuickAddClick }) => {
             )}
           </Dropdown>
 
+          {/* Pro Badge or Upgrade CTA */}
+          {isPro ? (
+            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-500/15 via-violet-600/15 to-indigo-600/15 border border-amber-400/40 text-[10px] font-black text-amber-800 dark:text-amber-300 shadow-xs select-none">
+              <Crown className="w-3 h-3 fill-amber-500 text-amber-500" />
+              PRO
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsUpgradeModalOpen(true)}
+              className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-100/70 transition-all cursor-pointer select-none"
+            >
+              <Sparkles className="w-3 h-3 text-blue-500" />
+              <span>Upgrade</span>
+            </button>
+          )}
+
           {/* User Profile Dropdown (Industry Standard: Accessible anywhere) */}
           <Dropdown
             align="right"
@@ -274,8 +293,23 @@ export const Topbar = ({ onMenuClick, onQuickAddClick }) => {
             }
           >
             <div className="px-3 py-2 border-b border-slate-100 dark:border-[#22262F]">
-              <div className="text-xs font-semibold text-slate-900 dark:text-[#F5F7FA] truncate">
-                {user?.name || 'User'}
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-semibold text-slate-900 dark:text-[#F5F7FA] truncate">
+                  {user?.name || 'User'}
+                </div>
+                {isPro ? (
+                  <span className="text-[9px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 px-1.5 py-0.2 rounded border border-amber-300/60">
+                    PRO
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsUpgradeModalOpen(true)}
+                    className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Upgrade →
+                  </button>
+                )}
               </div>
               <div className="text-[11px] text-slate-400 dark:text-[#747C89] truncate">
                 {user?.email || 'user@example.com'}
@@ -283,6 +317,9 @@ export const Topbar = ({ onMenuClick, onQuickAddClick }) => {
             </div>
             <DropdownItem icon={User} onClick={() => navigate('/app/settings')}>
               Account Profile
+            </DropdownItem>
+            <DropdownItem icon={Sparkles} onClick={() => navigate('/app/settings')}>
+              Plans & Billing
             </DropdownItem>
             <DropdownItem icon={Settings} onClick={() => navigate('/app/settings')}>
               Preferences
@@ -306,6 +343,12 @@ export const Topbar = ({ onMenuClick, onQuickAddClick }) => {
           </Dropdown>
         </div>
       </header>
+
+      {/* Upgrade Plan Modal Triggered from Topbar */}
+      <UpgradePlanModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+      />
     </>
   );
 };

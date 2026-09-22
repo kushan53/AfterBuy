@@ -62,12 +62,12 @@ export const LandingPage = () => {
   const [dashboardFilter, setDashboardFilter] = useState('all');
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#F8FAFC] dark:bg-[#0F1115] text-slate-900 dark:text-[#F5F7FA] selection:bg-blue-100 selection:text-blue-700">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#F8FAFC] dark:bg-[#0F1115] text-slate-900 dark:text-[#F5F7FA] selection:bg-blue-100 selection:text-blue-700 flex flex-col justify-between">
       
       {/* ========================================================================= */}
-      {/* 1. NAVBAR */}
+      {/* 1. NAVBAR (Fixed at top-0, stays visible on scroll, zero top gap)         */}
       {/* ========================================================================= */}
-      <header className="sticky top-0 z-40 w-full max-w-full border-b border-slate-200/80 dark:border-[#22262F] bg-white dark:bg-[#11141A]">
+      <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-slate-200/80 dark:border-[#22262F] bg-white/95 dark:bg-[#11141A]/95 backdrop-blur-md">
         <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           
           {/* Logo */}
@@ -289,7 +289,7 @@ export const LandingPage = () => {
       {/* ========================================================================= */}
       {/* 2. HERO SECTION */}
       {/* ========================================================================= */}
-      <section className="relative pt-10 pb-14 sm:pt-20 sm:pb-20 lg:pt-24 lg:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center overflow-hidden">
+      <section className="relative pt-26 sm:pt-36 lg:pt-40 pb-14 sm:pb-20 lg:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center overflow-hidden">
         {/* Lightweight Ambient Radial Gradient (No CPU blur) */}
         <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[600px] h-[350px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-500/10 dark:from-blue-600/15 via-transparent to-transparent rounded-full -z-10" />
 
@@ -1451,7 +1451,7 @@ export const LandingPage = () => {
       {/* ========================================================================= */}
       {/* 14. FOOTER */}
       {/* ========================================================================= */}
-      <footer className="border-t border-slate-200 dark:border-[#22262F] bg-white dark:bg-[#0F1115] pt-12 sm:pt-16 pb-12 text-slate-600 dark:text-[#A9B0BC]">
+      <footer className="mt-auto w-full border-t border-slate-200 dark:border-[#22262F] bg-white dark:bg-[#0F1115] pt-10 sm:pt-14 pb-6 sm:pb-8 text-slate-600 dark:text-[#A9B0BC]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-8 mb-12">
             

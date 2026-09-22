@@ -13,21 +13,24 @@ import {
   User,
   ChevronsUpDown,
   X,
-  Sparkles
+  Sparkles,
+  Crown,
 } from 'lucide-react';
 import { Dropdown, DropdownItem, DropdownSeparator, DropdownLabel } from '../ui/Dropdown';
 import { usePurchases } from '../../context/PurchaseContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../ui/Toast';
+import { UpgradePlanModal } from '../subscription/UpgradePlanModal';
 import { cn } from '../../utils/cn';
 
 export const Sidebar = ({ mobileOpen, setMobileOpen }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const { user, initials, logout } = useAuth();
+  const { user, initials, logout, isPro } = useAuth();
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const {
-    purchases,
+    purchases = [],
     activeReturnsCount,
     pendingRefundsList,
     totalActiveWarranties,
@@ -186,6 +189,56 @@ export const Sidebar = ({ mobileOpen, setMobileOpen }) => {
           ))}
         </nav>
       </div>
+
+      {/* Bottom section: Subscription Tier Card */}
+      <div className="p-3 border-t border-slate-100 dark:border-[#22262F]">
+        {isPro ? (
+          <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/10 via-violet-600/10 to-indigo-600/10 border border-amber-300/40 dark:border-amber-800/40 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold text-amber-800 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1">
+                <Crown className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                Pro Sentinel
+              </span>
+              <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded">
+                Active
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-600 dark:text-[#A9B0BC]">
+              Unlimited items • AI scanner active
+            </p>
+            <Link
+              to="/app/settings"
+              onClick={() => setMobileOpen && setMobileOpen(false)}
+              className="text-[10px] text-blue-600 dark:text-blue-400 font-bold hover:underline block pt-0.5 cursor-pointer"
+            >
+              Manage Subscription →
+            </Link>
+          </div>
+        ) : (
+          <div className="p-3 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/70 dark:border-blue-800/40 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                Free Plan
+              </span>
+              <span className="text-[10px] font-bold text-slate-600 dark:text-[#A9B0BC]">
+                {purchases.length}/25 items
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-[#747C89] leading-tight">
+              Unlock unlimited tracking, AI bill scanning & WhatsApp alerts.
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsUpgradeModalOpen(true)}
+              className="w-full mt-1 py-1.5 px-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>Upgrade to Pro (₹149)</span>
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -208,6 +261,12 @@ export const Sidebar = ({ mobileOpen, setMobileOpen }) => {
           </div>
         </div>
       )}
+
+      {/* Upgrade Plan Modal */}
+      <UpgradePlanModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+      />
     </>
   );
 };

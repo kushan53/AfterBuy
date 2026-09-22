@@ -1,14 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ShieldCheck, Lock, EyeOff, Server, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, Lock, EyeOff, Server, CheckCircle2, Mail, MessageSquare } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { PublicFooter } from '../components/layout/PublicFooter';
 
 export const PrivacyPage = () => {
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F1115] text-slate-900 dark:text-[#F5F7FA] selection:bg-blue-100 selection:text-blue-700 flex flex-col justify-between transition-colors duration-200">
-      {/* Top Navbar */}
-      <header className="w-full border-b border-slate-200/80 dark:border-[#22262F] bg-white/90 dark:bg-[#11141A]/90 backdrop-blur-md sticky top-0 z-20">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#F8FAFC] dark:bg-[#0F1115] text-slate-900 dark:text-[#F5F7FA] selection:bg-blue-100 selection:text-blue-700 flex flex-col justify-between transition-colors duration-200">
+      {/* Top Navbar (Fixed at top-0, stays visible on scroll, zero top gap) */}
+      <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-slate-200/80 dark:border-[#22262F] bg-white/95 dark:bg-[#11141A]/95 backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
             <div className="h-8 w-8 rounded-lg bg-blue-600 text-white font-bold text-sm flex items-center justify-center tracking-wider shadow-xs">
@@ -35,7 +35,7 @@ export const PrivacyPage = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 flex-1 w-full">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-22 pb-12 sm:pt-26 sm:pb-16 flex-1 w-full">
         <Link
           to="/"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-[#A9B0BC] hover:text-slate-800 dark:hover:text-[#F5F7FA] transition-colors mb-6"
@@ -111,22 +111,61 @@ export const PrivacyPage = () => {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-base font-bold text-slate-900">3. Information Sharing & Third Parties</h2>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <h2 className="text-base font-bold text-slate-900 dark:text-[#F5F7FA]">3. Information Sharing & Third Parties</h2>
+            <p className="text-xs text-slate-600 dark:text-[#A9B0BC] leading-relaxed">
               AfterBuy does <strong>not</strong> sell, rent, license, or trade your shopping history, order receipts, or personal details to advertisers, data brokers, or e-commerce marketplaces.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-base font-bold text-slate-900">4. Data Deletion & Your Rights</h2>
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <h2 className="text-base font-bold text-slate-900 dark:text-[#F5F7FA]">4. Data Deletion & Your Rights</h2>
+            <p className="text-xs text-slate-600 dark:text-[#A9B0BC] leading-relaxed">
               You retain full control over your data. You may delete individual purchases, remove uploaded invoice files, or delete your entire account at any time through account preferences. Upon deletion, your data is completely purged from active storage.
             </p>
           </section>
 
-          <div className="pt-6 border-t border-slate-100 text-xs text-slate-500">
-            <span>Privacy inquiries: <a href="mailto:privacy@afterbuy.io" className="text-blue-600 hover:underline">privacy@afterbuy.io</a></span>
-          </div>
+          <section className="space-y-4 pt-2">
+            <h2 className="text-base font-bold text-slate-900 dark:text-[#F5F7FA]">5. Contact Data Protection Officer (DPO)</h2>
+            <p className="text-xs text-slate-600 dark:text-[#A9B0BC] leading-relaxed">
+              If you wish to exercise your data rights (such as data portability, correction, or permanent deletion) or have questions about how we secure your data, contact our dedicated privacy governance desk:
+            </p>
+
+            <div className="p-4 sm:p-5 rounded-xl bg-slate-50 dark:bg-[#11141A] border border-slate-200/80 dark:border-[#22262F] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-900 dark:text-[#F5F7FA]">
+                      Privacy & Data Governance
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/70 dark:border-emerald-800/50">
+                      GDPR & DPDPA Aligned
+                    </span>
+                  </div>
+                  <a
+                    href="mailto:support.afterbuy@gmail.com?subject=Privacy%20%26%20Data%20Protection%20Inquiry"
+                    className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline mt-0.5 inline-block"
+                  >
+                    support.afterbuy@gmail.com
+                  </a>
+                  <p className="text-[11px] text-slate-500 dark:text-[#747C89] mt-0.5">
+                    Data rights requests acknowledged within 24–48 business hours • Identity verification required
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 sm:self-center">
+                <Link to="/contact">
+                  <Button variant="secondary" size="small" className="w-full sm:w-auto text-xs gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Submit Privacy Request</span>
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </section>
         </div>
       </main>
 

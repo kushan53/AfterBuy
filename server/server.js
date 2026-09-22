@@ -6,6 +6,7 @@ import { connectDB } from './config/db.js';
 // Route imports
 import authRoutes from './routes/authRoutes.js';
 import purchaseRoutes from './routes/purchaseRoutes.js';
+import contactRoutes from './routes/contactRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -15,9 +16,9 @@ connectDB();
 
 const app = express();
 
-// Middlewares
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Middlewares (allow up to 25mb for invoice and receipt attachments)
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 app.use(
   cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
@@ -37,6 +38,7 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/purchases', purchaseRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

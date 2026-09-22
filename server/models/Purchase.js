@@ -111,6 +111,10 @@ const purchaseSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    receiptFileType: {
+      type: String,
+      default: '',
+    },
     // Associated Refund
     refund: refundSchema,
   },

@@ -13,7 +13,8 @@ import {
   Download,
   ExternalLink,
   Edit2,
-  Trash2
+  Trash2,
+  Eye
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
@@ -22,6 +23,7 @@ import { Modal } from '../components/ui/Modal';
 import { usePurchases } from '../context/PurchaseContext';
 import { useToast } from '../components/ui/Toast';
 import { formatINR, getReturnInfo, getWarrantyInfo, getLifecycleStatus } from '../utils/purchaseUtils';
+import { InvoicePreviewModal } from '../components/documents/InvoicePreviewModal';
 
 export const PurchaseDetailsPage = () => {
   const { id } = useParams();
@@ -31,6 +33,7 @@ export const PurchaseDetailsPage = () => {
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
   const purchase = purchases.find((p) => p.id === id || p._id === id);
 
@@ -106,14 +109,24 @@ export const PurchaseDetailsPage = () => {
 
         <div className="flex items-center gap-2">
           {purchase.hasReceipt && (
-            <Button
-              variant="outline"
-              size="small"
-              icon={Download}
-              onClick={handleDownloadInvoice}
-            >
-              Invoice PDF
-            </Button>
+            <>
+              <Button
+                variant="primary"
+                size="small"
+                icon={Eye}
+                onClick={() => setIsInvoiceModalOpen(true)}
+              >
+                View Invoice
+              </Button>
+              <Button
+                variant="outline"
+                size="small"
+                icon={Download}
+                onClick={handleDownloadInvoice}
+              >
+                Download PDF
+              </Button>
+            </>
           )}
           <Button
             variant="outline"
@@ -276,11 +289,20 @@ export const PurchaseDetailsPage = () => {
               <span className="text-slate-500 dark:text-[#A9B0BC]">Category</span>
               <span className="text-slate-800 dark:text-[#A9B0BC]">{purchase.category || 'General'}</span>
             </div>
-            <div className="flex justify-between pt-2.5">
+            <div className="flex justify-between items-center pt-2.5">
               <span className="text-slate-500 dark:text-[#A9B0BC]">Tax Invoice</span>
-              <span className="text-blue-600 dark:text-blue-400 font-medium">
-                {purchase.hasReceipt ? 'Archived in Vault' : 'No document attached'}
-              </span>
+              {purchase.hasReceipt ? (
+                <button
+                  type="button"
+                  onClick={() => setIsInvoiceModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer text-xs"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>View Document</span>
+                </button>
+              ) : (
+                <span className="text-slate-400 text-xs">No document attached</span>
+              )}
             </div>
           </div>
         </Card>
@@ -448,6 +470,13 @@ export const PurchaseDetailsPage = () => {
           </div>
         </Modal>
       )}
+
+      {/* Invoice Preview Modal */}
+      <InvoicePreviewModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => setIsInvoiceModalOpen(false)}
+        document={purchase}
+      />
     </div>
   );
 };

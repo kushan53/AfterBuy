@@ -152,6 +152,31 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const sendLoginOtp = async (email) => {
+    return await apiRequest('/auth/send-login-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.toLowerCase().trim() }),
+    });
+  };
+
+  const loginWithOtp = async (email, otp) => {
+    const data = await apiRequest('/auth/verify-login-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.toLowerCase().trim(), otp }),
+    });
+
+    if (data.token) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, data.token);
+      setToken(data.token);
+    }
+
+    if (data.user) {
+      setUser(data.user);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+      return data.user;
+    }
+  };
+
   const setSession = (newToken, newUser) => {
     if (newToken) {
       localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
@@ -182,6 +207,68 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const upgradePlan = async ({ billingCycle = 'monthly', paymentMethod = 'UPI' } = {}) => {
+    const expires = new Date();
+    if (billingCycle === 'annual') {
+      expires.setFullYear(expires.getFullYear() + 1);
+    } else {
+      expires.setMonth(expires.getMonth() + 1);
+    }
+
+    const optimisticUser = {
+      ...user,
+      plan: 'pro',
+      planBillingCycle: billingCycle,
+      planStartedAt: new Date().toISOString(),
+      planExpiresAt: expires.toISOString(),
+    };
+    setUser(optimisticUser);
+
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY) || sessionStorage.getItem(TOKEN_STORAGE_KEY);
+    if (token) {
+      try {
+        const data = await apiRequest('/auth/subscribe', {
+          method: 'POST',
+          body: JSON.stringify({ plan: 'pro', billingCycle, paymentMethod }),
+        });
+        if (data.user) {
+          setUser(data.user);
+          return data;
+        }
+      } catch (err) {
+        console.warn('Backend subscribe sync notice:', err.message);
+      }
+    }
+    return { success: true, user: optimisticUser };
+  };
+
+  const downgradePlan = async () => {
+    const optimisticUser = {
+      ...user,
+      plan: 'free',
+      planBillingCycle: 'monthly',
+      planExpiresAt: null,
+    };
+    setUser(optimisticUser);
+
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY) || sessionStorage.getItem(TOKEN_STORAGE_KEY);
+    if (token) {
+      try {
+        const data = await apiRequest('/auth/subscribe', {
+          method: 'POST',
+          body: JSON.stringify({ plan: 'free' }),
+        });
+        if (data.user) {
+          setUser(data.user);
+          return data;
+        }
+      } catch (err) {
+        console.warn('Backend downgrade sync notice:', err.message);
+      }
+    }
+    return { success: true, user: optimisticUser };
+  };
+
   const logout = () => {
     setIsLoggingOut(true);
     localStorage.removeItem(TOKEN_STORAGE_KEY);
@@ -196,6 +283,8 @@ export const AuthProvider = ({ children }) => {
     }, 600);
   };
 
+  const isPro = user?.plan === 'pro';
+
   return (
     <AuthContext.Provider
       value={{
@@ -204,12 +293,18 @@ export const AuthProvider = ({ children }) => {
         loading,
         isLoggingOut,
         isAuthenticated: !!token && !!user,
+        isPro,
+        plan: user?.plan || 'free',
         initials: getInitials(user?.name),
         firstName: getFirstName(user?.name),
         login,
         signup,
         loginWithGoogle,
+        sendLoginOtp,
+        loginWithOtp,
         updateUser,
+        upgradePlan,
+        downgradePlan,
         setSession,
         logout,
       }}

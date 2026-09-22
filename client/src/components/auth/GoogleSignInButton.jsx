@@ -131,7 +131,7 @@ export const GoogleSignInButton = ({ label = 'Continue with Google' }) => {
         id="google-signin-btn"
         onClick={handleGoogleClick}
         disabled={loading}
-        className="w-full h-11 px-4 rounded-xl border border-slate-200/90 dark:border-[#2D333F] bg-white dark:bg-[#13161C] hover:bg-slate-50 dark:hover:bg-[#1A1E27] text-slate-700 dark:text-[#E6EAF2] hover:text-slate-900 dark:hover:text-white font-medium text-sm shadow-xs hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-150 flex items-center justify-center gap-3 cursor-pointer select-none active:scale-[0.99] disabled:opacity-60"
+        className="w-full h-12 px-4 rounded-xl border border-slate-200/90 dark:border-[#2D333F] bg-white dark:bg-[#13161C] hover:bg-slate-50 dark:hover:bg-[#1A1E27] text-slate-700 dark:text-[#E6EAF2] hover:text-slate-900 dark:hover:text-white font-medium text-sm shadow-xs hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 flex items-center justify-center gap-3 cursor-pointer select-none active:scale-[0.99] disabled:opacity-60"
       >
         {/* Crisp Multicolor Google G Logo SVG */}
         <svg className="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24">

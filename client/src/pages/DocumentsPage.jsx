@@ -8,19 +8,23 @@ import {
   Plus,
   ShieldCheck,
   Search,
-  CheckCircle2
+  CheckCircle2,
+  Eye
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import { usePurchases } from '../context/PurchaseContext';
 import { useToast } from '../components/ui/Toast';
+import { InvoicePreviewModal } from '../components/documents/InvoicePreviewModal';
 
 export const DocumentsPage = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { purchases } = usePurchases();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDoc, setSelectedDoc] = useState(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   const docPurchases = purchases.filter((p) => p.hasReceipt);
 
@@ -96,7 +100,7 @@ export const DocumentsPage = () => {
                   <TableHead>Store / Vendor</TableHead>
                   <TableHead>Format</TableHead>
                   <TableHead>Archive Date</TableHead>
-                  <TableHead className="text-right">Download</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -108,7 +112,7 @@ export const DocumentsPage = () => {
                           <FileText className="w-4 h-4" />
                         </div>
                         <div className="flex flex-col">
-                          <span>Tax_Invoice_{item.orderId || item.id}.pdf</span>
+                          <span>{item.receiptFileName || `Tax_Invoice_${item.orderId || item.id}.pdf`}</span>
                           <span className="text-[10px] text-slate-400">Tax Invoice & Warranty Certificate</span>
                         </div>
                       </div>
@@ -121,22 +125,36 @@ export const DocumentsPage = () => {
                     </TableCell>
                     <TableCell>
                       <span className="text-[10px] font-mono font-bold bg-slate-100 dark:bg-[#1C2028] px-2 py-0.5 rounded text-slate-600 dark:text-[#A9B0BC]">
-                        PDF • 248 KB
+                        {item.receiptFileType?.startsWith('image') ? 'IMAGE' : 'PDF'} • Stored
                       </span>
                     </TableCell>
                     <TableCell className="text-slate-500 dark:text-[#A9B0BC]">
                       {item.deliveryDate}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="small"
-                        icon={Download}
-                        className="text-xs py-1 px-2.5"
-                        onClick={() => handleDownload(item)}
-                      >
-                        Download
-                      </Button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          variant="primary"
+                          size="small"
+                          icon={Eye}
+                          className="text-xs py-1 px-2.5"
+                          onClick={() => {
+                            setSelectedDoc(item);
+                            setIsViewerOpen(true);
+                          }}
+                        >
+                          View
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="small"
+                          icon={Download}
+                          className="text-xs py-1 px-2.5"
+                          onClick={() => handleDownload(item)}
+                        >
+                          Download
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -149,6 +167,13 @@ export const DocumentsPage = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Invoice Preview Modal */}
+      <InvoicePreviewModal
+        isOpen={isViewerOpen}
+        onClose={() => setIsViewerOpen(false)}
+        document={selectedDoc}
+      />
     </div>
   );
 };

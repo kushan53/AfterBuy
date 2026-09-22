@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useToast } from '../components/ui/Toast';
 import { PublicFooter } from '../components/layout/PublicFooter';
+import { apiRequest } from '../utils/api';
 
 export const ContactPage = () => {
   const { addToast } = useToast();
@@ -15,33 +16,52 @@ export const ContactPage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name || !email || !message) {
+    if (!name.trim() || !email.trim() || !message.trim()) {
       addToast({
-        title: 'Error',
-        message: 'Please fill in all required fields.',
+        title: 'Required Fields Missing',
+        message: 'Please fill in your name, email address, and message.',
         type: 'error',
       });
       return;
     }
 
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setSubmitted(true);
-      addToast({
-        title: 'Message Sent!',
-        message: 'Our support team will get back to you within 24 hours.',
-        type: 'success',
+    try {
+      const res = await apiRequest('/contact', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          subject: subject.trim(),
+          message: message.trim(),
+        }),
       });
-    }, 600);
+
+      if (res.success) {
+        setSubmitted(true);
+        addToast({
+          title: 'Message Delivered!',
+          message: 'Your inquiry has been sent to AfterBuy Support. A confirmation has been sent to your email.',
+          type: 'success',
+        });
+      }
+    } catch (err) {
+      addToast({
+        title: 'Failed to Send',
+        message: err.message || 'Could not deliver your message right now. Please try again or write directly to support.afterbuy@gmail.com',
+        type: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F1115] text-slate-900 dark:text-[#F5F7FA] selection:bg-blue-100 selection:text-blue-700 flex flex-col justify-between transition-colors duration-200">
-      {/* Header */}
-      <header className="w-full border-b border-slate-200/80 dark:border-[#22262F] bg-white/90 dark:bg-[#11141A]/90 backdrop-blur-md sticky top-0 z-20">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#F8FAFC] dark:bg-[#0F1115] text-slate-900 dark:text-[#F5F7FA] selection:bg-blue-100 selection:text-blue-700 flex flex-col justify-between transition-colors duration-200">
+      {/* Header (Fixed at top-0, stays visible on scroll, zero top gap) */}
+      <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-slate-200/80 dark:border-[#22262F] bg-white/95 dark:bg-[#11141A]/95 backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
             <div className="h-8 w-8 rounded-lg bg-blue-600 text-white font-bold text-sm flex items-center justify-center tracking-wider shadow-xs">
@@ -68,7 +88,7 @@ export const ContactPage = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 flex-1 w-full">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-22 pb-12 sm:pt-26 sm:pb-16 flex-1 w-full">
         <Link
           to="/"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-[#A9B0BC] hover:text-slate-800 dark:hover:text-[#F5F7FA] transition-colors mb-6"
@@ -100,7 +120,12 @@ export const ContactPage = () => {
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-slate-900 dark:text-[#F5F7FA]">Email Support</h4>
-                  <p className="text-[11px] text-slate-500 dark:text-[#A9B0BC] mt-0.5">support@afterbuy.io</p>
+                  <a
+                    href="mailto:support.afterbuy@gmail.com"
+                    className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline mt-0.5 block font-medium"
+                  >
+                    support.afterbuy@gmail.com
+                  </a>
                   <p className="text-[10px] text-slate-400 dark:text-[#747C89]">Response within 24 hours</p>
                 </div>
               </div>

@@ -1,14 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Shield, FileText, Lock, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Shield, FileText, Lock, CheckCircle2, Mail, MessageSquare } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { PublicFooter } from '../components/layout/PublicFooter';
 
 export const TermsPage = () => {
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F1115] text-slate-900 dark:text-[#F5F7FA] selection:bg-blue-100 selection:text-blue-700 flex flex-col justify-between transition-colors duration-200">
-      {/* Top Navbar */}
-      <header className="w-full border-b border-slate-200/80 dark:border-[#22262F] bg-white/90 dark:bg-[#11141A]/90 backdrop-blur-md sticky top-0 z-20">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#F8FAFC] dark:bg-[#0F1115] text-slate-900 dark:text-[#F5F7FA] selection:bg-blue-100 selection:text-blue-700 flex flex-col justify-between transition-colors duration-200">
+      {/* Top Navbar (Fixed at top-0, stays visible on scroll, zero top gap) */}
+      <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-slate-200/80 dark:border-[#22262F] bg-white/95 dark:bg-[#11141A]/95 backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
             <div className="h-8 w-8 rounded-lg bg-blue-600 text-white font-bold text-sm flex items-center justify-center tracking-wider shadow-xs">
@@ -35,7 +35,7 @@ export const TermsPage = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 flex-1 w-full">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-22 pb-12 sm:pt-26 sm:pb-16 flex-1 w-full">
         <Link
           to="/"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-[#A9B0BC] hover:text-slate-800 dark:hover:text-[#F5F7FA] transition-colors mb-6"
@@ -108,9 +108,48 @@ export const TermsPage = () => {
             </p>
           </section>
 
-          <div className="pt-6 border-t border-slate-100 text-xs text-slate-500">
-            <span>Questions regarding terms? Contact us at <a href="mailto:legal@afterbuy.io" className="text-blue-600 hover:underline">legal@afterbuy.io</a></span>
-          </div>
+          <section className="space-y-4 pt-2">
+            <h2 className="text-base font-bold text-slate-900 dark:text-[#F5F7FA]">7. Contact & Legal Notices</h2>
+            <p className="text-xs text-slate-600 dark:text-[#A9B0BC] leading-relaxed">
+              If you have questions, notices of intellectual property claims, or legal requests concerning these Terms of Service, our legal compliance and support desk is available to assist you.
+            </p>
+
+            <div className="p-4 sm:p-5 rounded-xl bg-slate-50 dark:bg-[#11141A] border border-slate-200/80 dark:border-[#22262F] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200/80 dark:border-blue-800/60 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 mt-0.5">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-900 dark:text-[#F5F7FA]">
+                      Legal & Support Desk
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/70 dark:border-emerald-800/50">
+                      24–48h SLA
+                    </span>
+                  </div>
+                  <a
+                    href="mailto:support.afterbuy@gmail.com?subject=Legal%20Inquiry%20-%20Terms%20of%20Service"
+                    className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline mt-0.5 inline-block"
+                  >
+                    support.afterbuy@gmail.com
+                  </a>
+                  <p className="text-[11px] text-slate-500 dark:text-[#747C89] mt-0.5">
+                    Official AfterBuy Helpdesk • Mon–Fri 9:00 AM – 6:00 PM IST
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 sm:self-center">
+                <Link to="/contact">
+                  <Button variant="secondary" size="small" className="w-full sm:w-auto text-xs gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Contact Support Desk</span>
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </section>
         </div>
       </main>
 

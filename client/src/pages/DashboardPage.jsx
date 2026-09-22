@@ -19,6 +19,7 @@ import { Modal } from '../components/ui/Modal';
 import { useToast } from '../components/ui/Toast';
 import { usePurchases } from '../context/PurchaseContext';
 import { useAuth } from '../context/AuthContext';
+import { PhoneRecoveryBanner } from '../components/dashboard/PhoneRecoveryBanner';
 
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -72,6 +73,9 @@ export const DashboardPage = () => {
           Here's what requires your attention today across your purchases.
         </p>
       </div>
+
+      {/* Account Security / Phone Recovery Banner (shows only if phone not linked) */}
+      <PhoneRecoveryBanner />
 
       {/* 2. ACTION REQUIRED — Fully Data-Driven Hero Banner */}
       {urgentCount > 0 ? (

@@ -8,18 +8,22 @@ import {
   Plus,
   FileText,
   CheckCircle2,
-  Calendar
+  Calendar,
+  Eye
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import { usePurchases } from '../context/PurchaseContext';
+import { InvoicePreviewModal } from '../components/documents/InvoicePreviewModal';
 
 export const WarrantiesPage = () => {
   const navigate = useNavigate();
   const { purchases, totalActiveWarranties, expiringWarrantiesList } = usePurchases();
   const [activeTab, setActiveTab] = useState('all'); // 'all', 'expiring', 'healthy'
+  const [selectedDoc, setSelectedDoc] = useState(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   const allWarranties = purchases.filter((p) => p.warrantyActive);
 
@@ -192,10 +196,17 @@ export const WarrantiesPage = () => {
                       </TableCell>
                       <TableCell>
                         {item.hasReceipt ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
-                            <FileText className="w-3.5 h-3.5" />
-                            PDF Archived
-                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedDoc(item);
+                              setIsViewerOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>View Invoice</span>
+                          </button>
                         ) : (
                           <span className="text-xs text-slate-400">Missing</span>
                         )}
@@ -222,6 +233,13 @@ export const WarrantiesPage = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Invoice Preview Modal */}
+      <InvoicePreviewModal
+        isOpen={isViewerOpen}
+        onClose={() => setIsViewerOpen(false)}
+        document={selectedDoc}
+      />
     </div>
   );
 };

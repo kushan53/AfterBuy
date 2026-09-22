@@ -178,3 +178,191 @@ export const sendOtpEmail = async ({ to, name, otp }) => {
     reason: 'NO_PROVIDER',
   };
 };
+
+/**
+ * Sends Contact Us message to official AfterBuy Support email,
+ * and sends an acknowledgement confirmation to the user.
+ */
+export const sendContactEmail = async ({ name, email, subject, message }) => {
+  const supportEmail = process.env.EMAIL_USER || 'support.afterbuy@gmail.com';
+  const transporter = createTransporter();
+
+  const formattedDate = new Date().toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+
+  // 1. Email to AfterBuy Support Team
+  const adminSubject = `[AfterBuy Contact] ${subject ? subject : 'New inquiry from ' + name}`;
+  const adminHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>New Contact Us Message</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 24px 32px; background: linear-gradient(135deg, #2563eb, #4f46e5); color: #ffffff;">
+              <h2 style="margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.3px;">
+                📩 New Inquiry Received via AfterBuy
+              </h2>
+              <p style="margin: 4px 0 0 0; font-size: 12px; color: #e0e7ff;">
+                Submitted on ${formattedDate}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Details Card -->
+          <tr>
+            <td style="padding: 28px 32px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+                <tr>
+                  <td style="padding: 8px 0; font-size: 13px; color: #64748b; width: 120px;"><strong>Sender Name:</strong></td>
+                  <td style="padding: 8px 0; font-size: 14px; color: #0f172a; font-weight: 600;">${name}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; font-size: 13px; color: #64748b;"><strong>Sender Email:</strong></td>
+                  <td style="padding: 8px 0; font-size: 14px; color: #2563eb;"><a href="mailto:${email}" style="color: #2563eb; text-decoration: none;">${email}</a></td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; font-size: 13px; color: #64748b;"><strong>Subject:</strong></td>
+                  <td style="padding: 8px 0; font-size: 14px; color: #0f172a;">${subject || 'General Inquiry'}</td>
+                </tr>
+              </table>
+
+              <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; border-radius: 4px; padding: 16px 20px; margin: 16px 0;">
+                <p style="margin: 0 0 6px 0; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Message Content:</p>
+                <p style="margin: 0; font-size: 14px; line-height: 22px; color: #1e293b; white-space: pre-wrap;">${message}</p>
+              </div>
+
+              <p style="margin: 20px 0 0 0; font-size: 12px; color: #64748b;">
+                💡 <em>Clicking "Reply" to this email will directly reply to <strong>${email}</strong>.</em>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  // 2. Confirmation Email to the User
+  const userSubject = `We've received your message — AfterBuy Support`;
+  const userHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>We received your message</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" style="max-width: 540px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 32px 36px 20px 36px; text-align: center;">
+              <div style="display: inline-block; width: 44px; height: 44px; line-height: 44px; border-radius: 12px; background: linear-gradient(135deg, #2563eb, #4f46e5); color: #ffffff; font-weight: 800; font-size: 16px; letter-spacing: 1px;">
+                AB
+              </div>
+              <h2 style="margin: 16px 0 0 0; font-size: 20px; font-weight: 700; color: #0f172a; letter-spacing: -0.5px;">
+                Message Received!
+              </h2>
+              <p style="margin: 6px 0 0 0; font-size: 13px; color: #64748b;">
+                Thank you for contacting AfterBuy Support
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 0 36px;">
+              <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 0;">
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding: 24px 36px 28px 36px;">
+              <p style="margin: 0 0 14px 0; font-size: 14px; line-height: 22px; color: #334155;">
+                Hello <strong>${name}</strong>,
+              </p>
+              <p style="margin: 0 0 18px 0; font-size: 14px; line-height: 22px; color: #475569;">
+                We have received your inquiry regarding <strong>"${subject || 'Support Request'}"</strong>.
+              </p>
+              <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 22px; color: #475569;">
+                Our customer support team is reviewing your message and will get back to you within <strong>24 business hours</strong>.
+              </p>
+
+              <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px;">
+                <p style="margin: 0 0 4px 0; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px;">Your Message Summary</p>
+                <p style="margin: 0; font-size: 13px; color: #334155; line-height: 20px;">"${message}"</p>
+              </div>
+
+              <p style="margin: 24px 0 0 0; font-size: 13px; line-height: 20px; color: #64748b;">
+                Warm regards,<br>
+                <strong>The AfterBuy Support Team</strong><br>
+                <a href="mailto:${supportEmail}" style="color: #2563eb; text-decoration: none;">${supportEmail}</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f8fafc; padding: 16px 36px; border-top: 1px solid #f1f5f9; text-align: center;">
+              <p style="margin: 0; font-size: 11px; color: #94a3b8;">
+                &copy; ${new Date().getFullYear()} AfterBuy Technologies Inc. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  if (transporter) {
+    try {
+      // 1. Send notification to official AfterBuy Support Inbox
+      await transporter.sendMail({
+        from: `"AfterBuy Contact Desk" <${supportEmail}>`,
+        to: supportEmail,
+        replyTo: `"${name}" <${email}>`,
+        subject: adminSubject,
+        text: `From: ${name} (${email})\nSubject: ${subject}\n\nMessage:\n${message}`,
+        html: adminHtml,
+      });
+
+      console.log(`\n📬 [CONTACT US] New message delivered to support inbox: ${supportEmail} from ${email}\n`);
+
+      // 2. Send instant acknowledgement to user's email
+      await transporter.sendMail({
+        from: `"AfterBuy Support" <${supportEmail}>`,
+        to: email,
+        subject: userSubject,
+        text: `Hello ${name},\n\nWe have received your message regarding "${subject || 'Support'}". Our team will get back to you within 24 hours.\n\nAfterBuy Support`,
+        html: userHtml,
+      });
+
+      console.log(`✉️ [CONTACT ACK] Confirmation sent to user: ${email}\n`);
+      return { sent: true };
+    } catch (err) {
+      console.error('❌ [CONTACT EMAIL ERROR]:', err.message);
+      return { sent: false, error: err.message };
+    }
+  }
+
+  return { sent: false, reason: 'NO_TRANSPORTER' };
+};
+
