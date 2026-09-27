@@ -562,39 +562,19 @@ export const AddPurchasePage = () => {
 
           <div className="space-y-4">
             {!uploadedFile ? (
-              <div className="space-y-3">
-                <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-[#292E38] rounded-2xl p-7 hover:bg-slate-50/60 dark:hover:bg-[#1C2028]/60 cursor-pointer transition-all hover:border-blue-400 dark:hover:border-blue-500/50 text-center group">
-                  <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-sm">
-                    <Upload className="w-5 h-5" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-800 dark:text-[#F5F7FA]">Click to upload invoice / receipt</span>
-                  <span className="text-[11px] text-slate-400 dark:text-[#747C89] mt-1">PDF, PNG, JPG up to 10MB</span>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept=".pdf,.png,.jpg,.jpeg"
-                    onChange={handleFileSelect}
-                  />
-                </label>
-
-                {/* Digital receipt preview option even if no paper invoice uploaded yet */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-slate-50/70 dark:bg-[#151820] border border-slate-200/70 dark:border-[#242A36] text-xs">
-                  <div className="flex items-center gap-2 text-slate-600 dark:text-[#A9B0BC]">
-                    <FileText className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span>Don't have an invoice file? Generate & view official purchase receipt</span>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="small"
-                    icon={Eye}
-                    onClick={() => setIsPreviewOpen(true)}
-                    className="text-xs py-1 px-3 self-start sm:self-auto shrink-0"
-                  >
-                    View
-                  </Button>
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-[#292E38] rounded-2xl p-7 hover:bg-slate-50/60 dark:hover:bg-[#1C2028]/60 cursor-pointer transition-all hover:border-blue-400 dark:hover:border-blue-500/50 text-center group">
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-sm">
+                  <Upload className="w-5 h-5" />
                 </div>
-              </div>
+                <span className="text-xs font-bold text-slate-800 dark:text-[#F5F7FA]">Click to upload invoice / receipt</span>
+                <span className="text-[11px] text-slate-400 dark:text-[#747C89] mt-1">PDF, PNG, JPG up to 10MB</span>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={handleFileSelect}
+                />
+              </label>
             ) : (
               <div className="space-y-3">
                 {/* Uploaded File Bar with Direct Actions */}
@@ -620,7 +600,7 @@ export const AddPurchasePage = () => {
 
                   {/* Actions: View in Same Tab, Download, Modal & Remove */}
                   <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap shrink-0">
-                    {/* Toggle View in Same Tab */}
+                    {/* View Attached File */}
                     <Button
                       type="button"
                       variant={showInlinePreview ? 'primary' : 'outline'}
@@ -629,7 +609,7 @@ export const AddPurchasePage = () => {
                       onClick={() => setShowInlinePreview(!showInlinePreview)}
                       className="text-xs py-1.5 px-3"
                     >
-                      {showInlinePreview ? 'Hide in Tab' : 'View in Same Tab'}
+                      {showInlinePreview ? 'Hide' : 'View'}
                     </Button>
 
                     {/* Direct 1-Click Download Button */}
@@ -677,7 +657,7 @@ export const AddPurchasePage = () => {
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                         <span className="font-semibold text-slate-700 dark:text-[#A9B0BC]">
-                          Viewing {uploadedFile.name} (Same Tab)
+                          Viewing {uploadedFile.name}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -726,25 +706,27 @@ export const AddPurchasePage = () => {
           </div>
         </Card>
 
-        {/* Invoice Preview Modal */}
-        <InvoicePreviewModal
-          isOpen={isPreviewOpen}
-          onClose={() => setIsPreviewOpen(false)}
-          document={{
-            name: name || 'Purchase Receipt',
-            merchant: merchant || 'Store',
-            orderId: orderId || 'NEW-ORDER',
-            price: Number(price) || 0,
-            category,
-            purchaseDate: purchaseDate || 'Today',
-            deliveryDate,
-            returnDeadline: calculatedReturnDeadline,
-            warrantyExpiry: calculatedWarrantyExpiry,
-            receiptUrl: uploadedFile?.blobUrl || uploadedFile?.previewUrl || '',
-            receiptFileName: uploadedFile?.name || '',
-            receiptFileType: uploadedFile?.receiptFileType || uploadedFile?.fileType || '',
-          }}
-        />
+        {/* Invoice Preview Modal (only accessible when an invoice file is uploaded) */}
+        {uploadedFile && (
+          <InvoicePreviewModal
+            isOpen={isPreviewOpen}
+            onClose={() => setIsPreviewOpen(false)}
+            document={{
+              name: name || 'Purchase Receipt',
+              merchant: merchant || 'Store',
+              orderId: orderId || 'NEW-ORDER',
+              price: Number(price) || 0,
+              category,
+              purchaseDate: purchaseDate || 'Today',
+              deliveryDate,
+              returnDeadline: calculatedReturnDeadline,
+              warrantyExpiry: calculatedWarrantyExpiry,
+              receiptUrl: uploadedFile?.blobUrl || uploadedFile?.previewUrl || '',
+              receiptFileName: uploadedFile?.name || '',
+              receiptFileType: uploadedFile?.receiptFileType || uploadedFile?.fileType || '',
+            }}
+          />
+        )}
 
         {/* Form Actions */}
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-[#22262F]">
