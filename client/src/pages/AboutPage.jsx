@@ -2,16 +2,20 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Target, ShieldCheck, HeartHandshake, Sparkles, ShoppingBag, RotateCcw, Clock } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { UserAvatar } from '../components/ui/UserAvatar';
 import { PublicFooter } from '../components/layout/PublicFooter';
+import { useAuth } from '../context/AuthContext';
 
 export const AboutPage = () => {
+  const { isAuthenticated, user } = useAuth();
+
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#F8FAFC] dark:bg-[#0F1115] text-slate-900 dark:text-[#F5F7FA] selection:bg-blue-100 selection:text-blue-700 flex flex-col justify-between transition-colors duration-200">
       {/* Header (Fixed at top-0, stays visible on scroll, zero top gap) */}
       <header className="fixed top-0 left-0 right-0 z-50 w-full border-b border-slate-200/80 dark:border-[#22262F] bg-white/95 dark:bg-[#11141A]/95 backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-blue-600 text-white font-bold text-sm flex items-center justify-center tracking-wider shadow-xs">
+            <div className="h-8.5 w-8.5 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-600 text-white font-black text-sm flex items-center justify-center tracking-wider shadow-sm shadow-blue-500/20 ring-1 ring-white/20 shrink-0">
               AB
             </div>
             <div className="flex flex-col">
@@ -25,11 +29,32 @@ export const AboutPage = () => {
           </Link>
 
           <div className="flex items-center gap-3">
-            <Link to="/signup">
-              <Button variant="primary" size="small">
-                Get Started Free
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <div className="flex items-center gap-3">
+                <Link to="/app/dashboard">
+                  <Button variant="primary" size="small" className="text-xs">
+                    Dashboard →
+                  </Button>
+                </Link>
+                <Link to="/app/settings" title="Profile Settings" className="focus:outline-hidden">
+                  <UserAvatar user={user} size="sm" interactive />
+                </Link>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Link
+                  to="/login"
+                  className="text-xs font-semibold text-slate-600 dark:text-[#A9B0BC] hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link to="/signup">
+                  <Button variant="primary" size="small" className="text-xs">
+                    Get Started Free
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -104,14 +129,26 @@ export const AboutPage = () => {
 
           <div className="p-6 rounded-xl border border-blue-200/80 dark:border-blue-900/50 bg-blue-50/40 dark:bg-blue-950/25 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-[#F5F7FA]">Take control of your post-purchase life</h4>
-              <p className="text-xs text-slate-600 dark:text-[#A9B0BC] mt-0.5">Free to track up to 25 lifetime purchases with automated alerts.</p>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-[#F5F7FA]">
+                {isAuthenticated ? 'Your consumer ledger is active' : 'Take control of your post-purchase life'}
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-[#A9B0BC] mt-0.5">
+                {isAuthenticated ? 'Manage deadlines, warranty protection, and refunds in your cloud command center.' : 'Free to track up to 25 lifetime purchases with automated alerts.'}
+              </p>
             </div>
-            <Link to="/signup">
-              <Button variant="primary" size="medium">
-                Create Free Account →
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <Link to="/app/dashboard">
+                <Button variant="primary" size="medium">
+                  Go to Dashboard →
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/signup">
+                <Button variant="primary" size="medium">
+                  Create Free Account →
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </main>

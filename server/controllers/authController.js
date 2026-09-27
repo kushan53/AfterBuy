@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import mongoose from 'mongoose';
 import { User } from '../models/User.js';
+import { Purchase } from '../models/Purchase.js';
 import { sendOtpEmail } from '../utils/emailService.js';
 
 const generateToken = (id, expiresIn = '30d') => {
@@ -197,7 +197,7 @@ export const getMe = async (req, res) => {
 // @route   PUT /api/auth/profile
 export const updateProfile = async (req, res) => {
   try {
-    const { name, email, phone, city, pincode, returnPickupAddress, notifications, plan, planBillingCycle } = req.body;
+    const { name, email, phone, city, pincode, returnPickupAddress, notifications } = req.body;
 
     const user = await User.findById(req.user.id);
     if (!user) {
@@ -211,64 +211,12 @@ export const updateProfile = async (req, res) => {
     if (pincode !== undefined) user.pincode = pincode;
     if (returnPickupAddress !== undefined) user.returnPickupAddress = returnPickupAddress;
     if (notifications) user.notifications = { ...user.notifications, ...notifications };
-    if (plan && ['free', 'pro'].includes(plan)) user.plan = plan;
-    if (planBillingCycle && ['monthly', 'annual', 'lifetime'].includes(planBillingCycle)) {
-      user.planBillingCycle = planBillingCycle;
-    }
 
     const updatedUser = await user.save();
 
     res.status(200).json({
       success: true,
       user: updatedUser,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// @desc    Subscribe / Change plan (Upgrade or Downgrade)
-// @route   POST /api/auth/subscribe
-export const subscribePlan = async (req, res) => {
-  try {
-    const { plan = 'pro', billingCycle = 'monthly', paymentMethod = 'UPI' } = req.body;
-
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-
-    const now = new Date();
-    user.plan = plan;
-    user.planBillingCycle = billingCycle;
-    user.planStartedAt = now;
-
-    if (plan === 'pro') {
-      const expires = new Date();
-      if (billingCycle === 'annual') {
-        expires.setFullYear(expires.getFullYear() + 1);
-      } else {
-        expires.setMonth(expires.getMonth() + 1);
-      }
-      user.planExpiresAt = expires;
-    } else {
-      user.planExpiresAt = null;
-    }
-
-    const updatedUser = await user.save();
-
-    res.status(200).json({
-      success: true,
-      message: plan === 'pro' ? 'Congratulations! AfterBuy Pro activated.' : 'Plan changed to Free Tier.',
-      user: updatedUser,
-      transaction: {
-        id: `TXN_${Date.now()}`,
-        plan,
-        billingCycle,
-        paymentMethod,
-        date: now.toISOString(),
-        amount: plan === 'pro' ? (billingCycle === 'annual' ? 1299 : 149) : 0,
-      },
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -285,88 +233,42 @@ export const googleAuth = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Google authentication failed: Email is required' });
     }
 
-    // Only query database if MongoDB connection is already active (1 = connected)
-    // This prevents waiting 30 seconds for an unwhitelisted Atlas connection!
-    if (mongoose.connection.readyState === 1) {
-      let user = await User.findOne({ email });
+    let user = await User.findOne({ email });
 
-      if (user) {
-        // User exists, update Google profile attributes if needed
-        if (!user.googleId && googleId) user.googleId = googleId;
-        if (!user.avatar && avatar) user.avatar = avatar;
-        await user.save();
-      } else {
-        // Create new user via Google
-        user = await User.create({
-          name: name || email.split('@')[0],
-          email,
-          googleId: googleId || '',
-          avatar: avatar || '',
-          provider: 'google',
-        });
-      }
-
-      const token = generateToken(user._id, '30d');
-
-      return res.status(200).json({
-        success: true,
-        token,
-        sessionDuration: '30-Day session',
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone || '',
-          city: user.city || '',
-          avatar: user.avatar || '',
-          returnPickupAddress: user.returnPickupAddress || '',
-          plan: user.plan || 'free',
-        },
+    if (user) {
+      // User exists, update Google profile attributes if needed
+      if (!user.googleId && googleId) user.googleId = googleId;
+      if (!user.avatar && avatar) user.avatar = avatar;
+      await user.save();
+    } else {
+      // Create new user via Google
+      user = await User.create({
+        name: name || email.split('@')[0],
+        email,
+        googleId: googleId || '',
+        avatar: avatar || '',
+        provider: 'google',
       });
     }
 
-    // Instant zero-delay fallback when MongoDB Atlas is connecting or IP not whitelisted
-    const fallbackId = `g_${googleId || Date.now()}`;
-    const token = generateToken(fallbackId, '30d');
+    const token = generateToken(user._id, '30d');
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       token,
       sessionDuration: '30-Day session',
       user: {
-        id: fallbackId,
-        name: name || 'Google User',
-        email,
-        phone: '',
-        city: '',
-        avatar: avatar || '',
-        returnPickupAddress: '',
-        plan: 'free',
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '',
+        city: user.city || '',
+        avatar: user.avatar || '',
+        returnPickupAddress: user.returnPickupAddress || '',
       },
     });
   } catch (error) {
-    console.warn('[Google Auth Notice] Database query deferred:', error.message);
-
-    // If MongoDB Atlas connection fails (e.g. IP whitelist / SSL handshake),
-    // fallback gracefully so the Google-verified user can still log in without being blocked
-    const fallbackId = `g_${req.body.googleId || Date.now()}`;
-    const token = generateToken(fallbackId, '30d');
-
-    return res.status(200).json({
-      success: true,
-      token,
-      sessionDuration: '30-Day verified session',
-      user: {
-        id: fallbackId,
-        name: req.body.name || 'Google User',
-        email: req.body.email,
-        avatar: req.body.avatar || '',
-        phone: '',
-        city: '',
-        returnPickupAddress: '',
-        plan: 'free',
-      },
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -663,6 +565,31 @@ export const resetPassword = async (req, res) => {
         avatar: user.avatar || '',
         returnPickupAddress: user.returnPickupAddress || '',
       },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Permanently delete user account & all purchase records (DPDP/GDPR compliant)
+// @route   DELETE /api/auth/account
+// @access  Private
+export const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Not authorized' });
+    }
+
+    // 1. Delete all user purchase documents & attachments
+    await Purchase.deleteMany({ user: userId });
+
+    // 2. Delete the user account record
+    await User.findByIdAndDelete(userId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Account and all associated purchase data permanently deleted.',
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

@@ -24,6 +24,8 @@ import { usePurchases } from '../context/PurchaseContext';
 import { useToast } from '../components/ui/Toast';
 import { formatINR, getReturnInfo, getWarrantyInfo, getLifecycleStatus } from '../utils/purchaseUtils';
 import { InvoicePreviewModal } from '../components/documents/InvoicePreviewModal';
+import { SearchableStoreSelect } from '../components/ui/SearchableStoreSelect';
+import { AdvancedDatePicker } from '../components/ui/AdvancedDatePicker';
 
 export const PurchaseDetailsPage = () => {
   const { id } = useParams();
@@ -61,27 +63,69 @@ export const PurchaseDetailsPage = () => {
     price: purchase.price || '',
     orderId: purchase.orderId || '',
     category: purchase.category || 'Electronics',
+    purchaseDate: purchase.purchaseDate || '',
   });
+
+  // Keep form synchronized when opening edit modal
+  React.useEffect(() => {
+    if (purchase) {
+      setEditFormData({
+        name: purchase.name || '',
+        merchant: purchase.merchant || '',
+        price: purchase.price || '',
+        orderId: purchase.orderId || '',
+        category: purchase.category || 'Electronics',
+        purchaseDate: purchase.purchaseDate || '',
+      });
+    }
+  }, [purchase, isEditModalOpen]);
 
   const returnInfo = getReturnInfo(purchase);
   const warrantyInfo = getWarrantyInfo(purchase);
   const lifecycle = getLifecycleStatus(purchase);
 
-  const handleInitiateReturn = () => {
-    requestReturn(purchase.id);
-    addToast({
-      title: 'Return Initiated',
-      message: `Return requested for ${purchase.name}.`,
-      type: 'success',
-    });
+  const handleInitiateReturn = async () => {
+    try {
+      await requestReturn(purchase.id);
+      addToast({
+        title: 'Return Initiated',
+        message: `Return requested for ${purchase.name}. Reverse pickup scheduled.`,
+        type: 'success',
+      });
+    } catch (err) {
+      addToast({
+        title: 'Return Request Failed',
+        message: err.message || 'Could not initiate return request.',
+        type: 'error',
+      });
+    }
   };
 
   const handleDownloadInvoice = () => {
-    addToast({
-      title: 'Invoice Downloaded',
-      message: `Tax invoice for ${purchase.name} saved securely.`,
-      type: 'success',
-    });
+    const fileUrl = purchase.receiptUrl;
+    const fileName = purchase.receiptFileName || `Tax_Invoice_${purchase.orderId || purchase.id || 'INV'}.pdf`;
+
+    if (fileUrl) {
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      addToast({
+        title: 'Invoice Downloaded',
+        message: `Tax invoice for ${purchase.name} saved securely.`,
+        type: 'success',
+      });
+    } else {
+      setIsInvoiceModalOpen(true);
+      addToast({
+        title: 'Digital Invoice',
+        message: `Viewing digital tax receipt for ${purchase.name}.`,
+        type: 'info',
+      });
+    }
   };
 
   return (
@@ -304,6 +348,20 @@ export const PurchaseDetailsPage = () => {
                 <span className="text-slate-400 text-xs">No document attached</span>
               )}
             </div>
+            {purchase.storeSupportUrl && (
+              <div className="flex justify-between items-center pt-2.5">
+                <span className="text-slate-500 dark:text-[#A9B0BC]">Store Portal / Contact</span>
+                <a
+                  href={purchase.storeSupportUrl.startsWith('http') || purchase.storeSupportUrl.startsWith('mailto:') ? purchase.storeSupportUrl : `https://${purchase.storeSupportUrl}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-semibold hover:underline text-xs"
+                >
+                  <span>Open Return Desk</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            )}
           </div>
         </Card>
       </div>
@@ -317,21 +375,30 @@ export const PurchaseDetailsPage = () => {
           description={`Update details for ${purchase.name}`}
         >
           <form
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              updatePurchase(purchase.id, {
-                name: editFormData.name,
-                merchant: editFormData.merchant,
-                price: Number(editFormData.price) || 0,
-                orderId: editFormData.orderId,
-                category: editFormData.category,
-              });
-              setIsEditModalOpen(false);
-              addToast({
-                title: 'Purchase Updated',
-                message: `Changes to ${editFormData.name} saved successfully.`,
-                type: 'success',
-              });
+              try {
+                await updatePurchase(purchase.id, {
+                  name: editFormData.name,
+                  merchant: editFormData.merchant,
+                  price: Number(editFormData.price) || 0,
+                  orderId: editFormData.orderId,
+                  category: editFormData.category,
+                  purchaseDate: editFormData.purchaseDate,
+                });
+                setIsEditModalOpen(false);
+                addToast({
+                  title: 'Purchase Updated',
+                  message: `Changes to ${editFormData.name} saved successfully.`,
+                  type: 'success',
+                });
+              } catch (err) {
+                addToast({
+                  title: 'Update Failed',
+                  message: err.message || 'Could not save purchase updates.',
+                  type: 'error',
+                });
+              }
             }}
             className="space-y-4"
           >
@@ -348,19 +415,15 @@ export const PurchaseDetailsPage = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-[#F5F7FA] mb-1">
-                  Merchant / Store
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editFormData.merchant}
-                  onChange={(e) => setEditFormData({ ...editFormData, merchant: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-[#292E38] bg-white dark:bg-[#13161C] text-xs text-slate-900 dark:text-[#F5F7FA] focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <SearchableStoreSelect
+                label="Store / Merchant *"
+                value={editFormData.merchant}
+                onChange={(val) => setEditFormData((prev) => ({ ...prev, merchant: val }))}
+                onStoreChange={(store) => {
+                  if (store.category) setEditFormData((prev) => ({ ...prev, category: store.category }));
+                }}
+              />
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-[#F5F7FA] mb-1">
@@ -376,34 +439,24 @@ export const PurchaseDetailsPage = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <AdvancedDatePicker
+                label="Purchase Date"
+                value={editFormData.purchaseDate}
+                onChange={(val) => setEditFormData((prev) => ({ ...prev, purchaseDate: val }))}
+              />
+
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-[#F5F7FA] mb-1">
-                  Order ID #
+                  Order ID (Optional)
                 </label>
                 <input
                   type="text"
                   value={editFormData.orderId}
                   onChange={(e) => setEditFormData({ ...editFormData, orderId: e.target.value })}
+                  placeholder="e.g. 402-892182-1"
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-[#292E38] bg-white dark:bg-[#13161C] text-xs text-slate-900 dark:text-[#F5F7FA] focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-mono"
                 />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-[#F5F7FA] mb-1">
-                  Category
-                </label>
-                <select
-                  value={editFormData.category}
-                  onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-[#292E38] bg-white dark:bg-[#13161C] text-xs text-slate-900 dark:text-[#F5F7FA] focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                >
-                  <option value="Electronics">Electronics</option>
-                  <option value="Fashion">Fashion</option>
-                  <option value="Gadgets">Gadgets</option>
-                  <option value="Appliances">Appliances</option>
-                  <option value="Other">Other</option>
-                </select>
               </div>
             </div>
 

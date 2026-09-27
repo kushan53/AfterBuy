@@ -62,24 +62,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: 'INR (₹)',
     },
-    plan: {
-      type: String,
-      enum: ['free', 'pro'],
-      default: 'free',
-    },
-    planBillingCycle: {
-      type: String,
-      enum: ['monthly', 'annual', 'lifetime'],
-      default: 'monthly',
-    },
-    planStartedAt: {
-      type: Date,
-      default: null,
-    },
-    planExpiresAt: {
-      type: Date,
-      default: null,
-    },
     notifications: {
       urgentReturnAlerts: { type: Boolean, default: true },
       overdueRefundAlerts: { type: Boolean, default: true },

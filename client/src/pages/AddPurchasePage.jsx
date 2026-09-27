@@ -13,28 +13,26 @@ import {
   CheckCircle2,
   AlertCircle,
   Eye,
-  Sparkles,
-  Bot,
-  Crown
+  EyeOff,
+  Download,
+  Maximize2,
+  Trash2,
+  FileCheck
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
+import { SearchableStoreSelect } from '../components/ui/SearchableStoreSelect';
+import { AdvancedDatePicker } from '../components/ui/AdvancedDatePicker';
 import { usePurchases } from '../context/PurchaseContext';
-import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
 import { InvoicePreviewModal } from '../components/documents/InvoicePreviewModal';
-import { UpgradePlanModal } from '../components/subscription/UpgradePlanModal';
 
 export const AddPurchasePage = () => {
   const navigate = useNavigate();
-  const { addPurchase, purchases = [] } = usePurchases();
-  const { isPro } = useAuth();
+  const { addPurchase } = usePurchases();
   const { addToast } = useToast();
-
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const [isAiScanning, setIsAiScanning] = useState(false);
 
   // SECTION 1: Basic Details
   const [name, setName] = useState('');
@@ -42,7 +40,7 @@ export const AddPurchasePage = () => {
   const [purchaseDate, setPurchaseDate] = useState(
     new Date().toISOString().split('T')[0]
   );
-  const [merchant, setMerchant] = useState('Amazon India');
+  const [merchant, setMerchant] = useState('Amazon');
   const [customMerchant, setCustomMerchant] = useState('');
   const [orderId, setOrderId] = useState('');
   const [category, setCategory] = useState('Electronics');
@@ -65,6 +63,7 @@ export const AddPurchasePage = () => {
   // Real Document Upload with interactive preview
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [showInlinePreview, setShowInlinePreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Validation state
@@ -93,23 +92,61 @@ export const AddPurchasePage = () => {
     return baseDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   })();
 
-  // Real File Upload Handler (reads base64 DataURL for instant preview and upload)
+  // Real File Upload Handler (reads base64 DataURL and creates clean Blob URL for instant in-tab preview)
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
+        let blobUrl = '';
+        try {
+          blobUrl = URL.createObjectURL(file);
+        } catch {
+          blobUrl = reader.result;
+        }
+
+        const isPdf = file.type.includes('pdf') || /\.pdf$/i.test(file.name);
+        const isImage = file.type.startsWith('image') || /\.(jpg|jpeg|png|webp|gif)$/i.test(file.name);
+
         setUploadedFile({
+          file,
           name: file.name,
           size: `${(file.size / 1024).toFixed(1)} KB`,
           previewUrl: reader.result,
+          blobUrl,
           receiptUrl: reader.result,
           receiptFileName: file.name,
-          receiptFileType: file.type,
+          receiptFileType: file.type || (isPdf ? 'application/pdf' : 'image/jpeg'),
+          isPdf,
+          isImage,
         });
+        setShowInlinePreview(true); // Automatically open in-tab preview on upload
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // Direct 1-Click File Download Handler (same tab, no new window needed)
+  const handleDownloadAttachment = (e) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+    if (!uploadedFile) return;
+
+    const downloadHref = uploadedFile.blobUrl || uploadedFile.previewUrl || uploadedFile.receiptUrl;
+    if (!downloadHref) return;
+
+    const link = document.createElement('a');
+    link.href = downloadHref;
+    link.download = uploadedFile.name || 'Invoice_Document';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    addToast({
+      title: 'Download Started',
+      message: `Downloading ${uploadedFile.name}`,
+      type: 'success',
+    });
   };
 
   // Form Submit & Validation
@@ -122,8 +159,8 @@ export const AddPurchasePage = () => {
       newErrors.price = 'Please enter a valid positive price';
     }
     if (!purchaseDate) newErrors.purchaseDate = 'Purchase date is required';
-    if ((merchant === 'Other Store' || merchant === 'Other') && !customMerchant.trim()) {
-      newErrors.merchant = 'Please write the store / merchant name';
+    if (!merchant.trim() || merchant === 'Other Store' || merchant === 'Other') {
+      newErrors.merchant = 'Please select or type a store / merchant name';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -185,15 +222,13 @@ export const AddPurchasePage = () => {
     }
 
     // Assemble purchase object
-    const finalMerchant = (merchant === 'Other Store' || merchant === 'Other')
-      ? customMerchant.trim()
-      : merchant;
+    const finalMerchant = merchant.trim() || 'Retail Store';
 
     const newPurchase = {
       name: name.trim(),
       merchant: finalMerchant,
       orderId: orderId.trim() || `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
-      category,
+      category: category || 'General',
       price: Number(price),
       purchaseDate,
       deliveryDate: deliveryDate
@@ -236,48 +271,6 @@ export const AddPurchasePage = () => {
     }
   };
 
-  // AI Smart Bill Scanner (Pro feature simulation)
-  const handleAiScan = async () => {
-    if (!uploadedFile) {
-      addToast({
-        title: 'Attach Bill First',
-        message: 'Please choose an invoice or receipt file below to scan with AI.',
-        type: 'info',
-      });
-      return;
-    }
-    setIsAiScanning(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setIsAiScanning(false);
-
-    const fname = (uploadedFile.name || '').toLowerCase();
-    if (fname.includes('macbook') || fname.includes('apple')) {
-      setName('Apple MacBook Air M2 13.6" (Space Grey)');
-      setPrice('99900');
-      setMerchant('Apple Store');
-      setCategory('Electronics');
-      setOrderId('APL-IND-902198');
-    } else if (fname.includes('sony') || fname.includes('headphone')) {
-      setName('Sony WH-1000XM4 Wireless Noise Cancelling Headphones');
-      setPrice('24990');
-      setMerchant('Amazon India');
-      setCategory('Electronics');
-      setOrderId('402-8921820-1928301');
-    } else {
-      setName('Samsung Crystal 4K UHD Smart TV 55"');
-      setPrice('42990');
-      setMerchant('Croma');
-      setCategory('Home Appliances');
-      setOrderId('CRM-829104-BL');
-    }
-
-    addToast({
-      title: '✨ AI Extraction Complete!',
-      message: 'Product name, ₹ price, merchant, and order details extracted from your invoice.',
-      type: 'success',
-    });
-  };
-
   return (
     <div className="space-y-6 max-w-3xl mx-auto pb-12">
       {/* Back button & Page Title */}
@@ -296,54 +289,6 @@ export const AddPurchasePage = () => {
           Add a purchase to start tracking its post-purchase lifecycle.
         </p>
       </div>
-
-      {/* Plan Capacity & Tier Status Banner */}
-      {isPro ? (
-        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-violet-600/10 to-indigo-600/10 border border-amber-300/50 dark:border-amber-700/50 flex items-center justify-between gap-3 text-xs shadow-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
-              <Crown className="w-4 h-4 fill-amber-500 text-amber-500" />
-            </div>
-            <div>
-              <span className="font-bold text-slate-900 dark:text-[#F5F7FA] block">
-                AfterBuy Pro Active • Unlimited Tracking
-              </span>
-              <span className="text-[11px] text-slate-500 dark:text-[#A9B0BC]">
-                Logged {purchases.length} items • 10GB cloud vault & AI scanning enabled
-              </span>
-            </div>
-          </div>
-          <span className="text-[10px] font-bold text-amber-800 dark:text-amber-300 bg-amber-100/80 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-800">
-            PRO VIP
-          </span>
-        </div>
-      ) : (
-        <div className="p-3.5 rounded-2xl bg-slate-100/80 dark:bg-[#13161C] border border-slate-200/80 dark:border-[#22262F] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-xl bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="font-bold text-slate-800 dark:text-[#F5F7FA] block">
-                Basic Free Plan: {purchases.length} / 25 items used
-              </span>
-              <span className="text-[11px] text-slate-500 dark:text-[#A9B0BC]">
-                {25 - purchases.length > 0
-                  ? `${25 - purchases.length} tracking slots left before 25-item ceiling`
-                  : 'Free limit reached! Upgrade to Pro for unlimited items'}
-              </span>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsUpgradeModalOpen(true)}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors cursor-pointer self-end sm:self-center"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Unlock Unlimited with Pro →</span>
-          </button>
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* SECTION 1: BASIC DETAILS */}
@@ -380,36 +325,38 @@ export const AddPurchasePage = () => {
                 required
               />
 
-              <Input
-                label="Purchase Date *"
-                type="date"
+              <AdvancedDatePicker
+                label="Purchase Date"
                 value={purchaseDate}
-                onChange={(e) => setPurchaseDate(e.target.value)}
+                onChange={(val) => {
+                  setPurchaseDate(val);
+                  if (errors.purchaseDate) setErrors((prev) => ({ ...prev, purchaseDate: null }));
+                }}
                 error={errors.purchaseDate}
                 required
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Select
-                label="Store / Merchant"
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <SearchableStoreSelect
+                label="Store / Merchant *"
                 value={merchant}
-                onChange={(e) => setMerchant(e.target.value)}
-                options={[
-                  { value: 'Amazon India', label: 'Amazon India' },
-                  { value: 'Flipkart', label: 'Flipkart' },
-                  { value: 'Apple Store', label: 'Apple Store' },
-                  { value: 'Croma', label: 'Croma' },
-                  { value: 'Myntra', label: 'Myntra' },
-                  { value: 'Reliance Digital', label: 'Reliance Digital' },
-                  { value: 'Tata CLiQ', label: 'Tata CLiQ' },
-                  { value: 'Nykaa', label: 'Nykaa' },
-                  { value: 'Meesho', label: 'Meesho' },
-                  { value: 'Samsung', label: 'Samsung' },
-                  { value: 'Zara', label: 'Zara' },
-                  { value: 'Nike', label: 'Nike' },
-                  { value: 'Other Store', label: 'Other (Type Store Name)' },
-                ]}
+                onChange={(val) => {
+                  setMerchant(val);
+                  if (errors.merchant) setErrors((prev) => ({ ...prev, merchant: null }));
+                }}
+                onStoreChange={(store) => {
+                  if (store.defaultReturnDays) {
+                    setReturnWindowOption(String(store.defaultReturnDays));
+                  }
+                  if (store.category) {
+                    setCategory(store.category);
+                  }
+                  if (store.isCustom) {
+                    setCustomMerchant(store.name);
+                  }
+                }}
+                error={errors.merchant}
               />
 
               <Input
@@ -417,44 +364,9 @@ export const AddPurchasePage = () => {
                 placeholder="e.g. 402-892182-1"
                 value={orderId}
                 onChange={(e) => setOrderId(e.target.value)}
-              />
-
-              <Select
-                label="Category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                options={[
-                  { value: 'Electronics', label: 'Electronics' },
-                  { value: 'Gadgets', label: 'Gadgets' },
-                  { value: 'Home Appliances', label: 'Home Appliances' },
-                  { value: 'Fashion', label: 'Fashion' },
-                  { value: 'Footwear', label: 'Footwear' },
-                  { value: 'Personal Care', label: 'Personal Care' },
-                  { value: 'Furniture & Decor', label: 'Furniture & Decor' },
-                  { value: 'Other', label: 'Other' },
-                ]}
+                helperText="Helps in warranty claims and invoice lookup"
               />
             </div>
-
-            {/* If user selected Other Store, show custom store input */}
-            {(merchant === 'Other Store' || merchant === 'Other') && (
-              <div className="p-3.5 rounded-xl bg-blue-50/60 dark:bg-blue-950/25 border border-blue-200/80 dark:border-blue-800/50 space-y-2 animate-in fade-in duration-150">
-                <Input
-                  label="Specify Store / Merchant Name *"
-                  placeholder="e.g. Zara Official, Nike India, Local Electronics Shop..."
-                  value={customMerchant}
-                  onChange={(e) => {
-                    setCustomMerchant(e.target.value);
-                    if (errors.merchant) setErrors((prev) => ({ ...prev, merchant: null }));
-                  }}
-                  error={errors.merchant}
-                  required
-                />
-                <p className="text-[11px] text-slate-500 dark:text-[#747C89] leading-relaxed">
-                  💡 <strong>Custom Merchant Return Management:</strong> In Section 3 below, select this store's return policy (or specify custom days). AfterBuy will count down to the deadline, alert you before it closes, and let you manage returns & refunds seamlessly from your dashboard.
-                </p>
-              </div>
-            )}
           </div>
         </Card>
 
@@ -465,12 +377,17 @@ export const AddPurchasePage = () => {
             Delivery Date
           </h3>
 
-          <div className="max-w-xs">
-            <Input
+          <div className="max-w-md">
+            <AdvancedDatePicker
               label="Delivery Date"
-              type="date"
               value={deliveryDate}
-              onChange={(e) => setDeliveryDate(e.target.value)}
+              onChange={(val) => setDeliveryDate(val)}
+              minDate={purchaseDate}
+              presets={[
+                { label: 'Same day', daysOffset: 0 },
+                { label: 'Next day', daysOffset: 1 },
+                { label: '3 days later', daysOffset: 3 },
+              ]}
               helperText="Return windows are counted starting from this date."
             />
           </div>
@@ -529,11 +446,16 @@ export const AddPurchasePage = () => {
                 />
 
                 {returnWindowOption === 'custom' ? (
-                  <Input
+                  <AdvancedDatePicker
                     label="Custom Return Deadline"
-                    type="date"
                     value={customReturnDeadline}
-                    onChange={(e) => setCustomReturnDeadline(e.target.value)}
+                    onChange={(val) => setCustomReturnDeadline(val)}
+                    minDate={deliveryDate || purchaseDate}
+                    presets={[
+                      { label: '+7 Days', daysOffset: 7 },
+                      { label: '+14 Days', daysOffset: 14 },
+                      { label: '+30 Days', daysOffset: 30 },
+                    ]}
                   />
                 ) : (
                   <div className="flex flex-col justify-end">
@@ -599,11 +521,16 @@ export const AddPurchasePage = () => {
                 />
 
                 {warrantyOption === 'custom' ? (
-                  <Input
+                  <AdvancedDatePicker
                     label="Custom Warranty Expiry Date"
-                    type="date"
                     value={customWarrantyExpiry}
-                    onChange={(e) => setCustomWarrantyExpiry(e.target.value)}
+                    onChange={(val) => setCustomWarrantyExpiry(val)}
+                    minDate={purchaseDate}
+                    presets={[
+                      { label: '+6 Months', daysOffset: 180 },
+                      { label: '+1 Year', daysOffset: 365 },
+                      { label: '+2 Years', daysOffset: 730 },
+                    ]}
                   />
                 ) : (
                   <div className="flex flex-col justify-end">
@@ -625,85 +552,175 @@ export const AddPurchasePage = () => {
               <span className="w-5 h-5 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 text-xs flex items-center justify-center font-bold">5</span>
               Invoice / Receipt Attachment
             </h3>
-
-            {/* AI Auto-Fill Trigger */}
-            {isPro ? (
-              <button
-                type="button"
-                onClick={handleAiScan}
-                disabled={isAiScanning}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
-              >
-                {isAiScanning ? (
-                  <>
-                    <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    <span>AI Scanning Bill...</span>
-                  </>
-                ) : (
-                  <>
-                    <Bot className="w-3.5 h-3.5" />
-                    <span>AI Auto-Fill Details</span>
-                  </>
-                )}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setIsUpgradeModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-blue-700 dark:text-blue-300 text-xs font-semibold hover:bg-blue-100/60 transition-all cursor-pointer"
-                title="Pro exclusive: Auto-extracts price, merchant & dates from invoice"
-              >
-                <Sparkles className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                <span>AI Auto-Fill</span>
-                <span className="bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full uppercase">Pro</span>
-              </button>
+            {uploadedFile && (
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center gap-1">
+                <FileCheck className="w-3 h-3" />
+                Attached
+              </span>
             )}
           </div>
 
-          <div>
+          <div className="space-y-4">
             {!uploadedFile ? (
-              <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-[#292E38] rounded-xl p-6 hover:bg-slate-50/60 dark:hover:bg-[#1C2028]/60 cursor-pointer transition-colors text-center">
-                <Upload className="w-6 h-6 text-slate-400 dark:text-[#747C89] mb-2" />
-                <span className="text-xs font-semibold text-slate-700 dark:text-[#F5F7FA]">Click to upload invoice / receipt</span>
-                <span className="text-[11px] text-slate-400 dark:text-[#747C89] mt-0.5">PDF, PNG, JPG up to 10MB</span>
-                <input
-                  type="file"
-                  className="hidden"
-                  accept=".pdf,.png,.jpg,.jpeg"
-                  onChange={handleFileSelect}
-                />
-              </label>
-            ) : (
-              <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-[#13161C] border border-slate-200 dark:border-[#292E38] rounded-xl">
-                <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                  <div className="p-2 bg-white dark:bg-[#1C2028] rounded-lg border border-slate-200 dark:border-[#292E38] text-blue-600 dark:text-blue-400 shrink-0">
-                    <FileText className="w-4 h-4" />
+              <div className="space-y-3">
+                <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-[#292E38] rounded-2xl p-7 hover:bg-slate-50/60 dark:hover:bg-[#1C2028]/60 cursor-pointer transition-all hover:border-blue-400 dark:hover:border-blue-500/50 text-center group">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-sm">
+                    <Upload className="w-5 h-5" />
                   </div>
-                  <div className="min-w-0">
-                    <h5 className="text-xs font-semibold text-slate-800 dark:text-[#F5F7FA] truncate">{uploadedFile.name}</h5>
-                    <span className="text-[11px] text-slate-400 dark:text-[#747C89]">{uploadedFile.size}</span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-[#F5F7FA]">Click to upload invoice / receipt</span>
+                  <span className="text-[11px] text-slate-400 dark:text-[#747C89] mt-1">PDF, PNG, JPG up to 10MB</span>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    onChange={handleFileSelect}
+                  />
+                </label>
+
+                {/* Digital receipt preview option even if no paper invoice uploaded yet */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-slate-50/70 dark:bg-[#151820] border border-slate-200/70 dark:border-[#242A36] text-xs">
+                  <div className="flex items-center gap-2 text-slate-600 dark:text-[#A9B0BC]">
+                    <FileText className="w-4 h-4 text-blue-500 shrink-0" />
+                    <span>Don't have an invoice file? Generate & view official purchase receipt</span>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
                   <Button
                     type="button"
                     variant="outline"
                     size="small"
                     icon={Eye}
                     onClick={() => setIsPreviewOpen(true)}
-                    className="text-xs py-1 px-2.5"
+                    className="text-xs py-1 px-3 self-start sm:self-auto shrink-0"
                   >
                     View
                   </Button>
-                  <button
-                    type="button"
-                    onClick={() => setUploadedFile(null)}
-                    className="p-1.5 rounded-lg text-slate-400 dark:text-[#747C89] hover:text-slate-600 dark:hover:text-[#F5F7FA] hover:bg-slate-200/60 dark:hover:bg-[#232833] transition-colors cursor-pointer"
-                    title="Remove attachment"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
                 </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Uploaded File Bar with Direct Actions */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 bg-slate-50 dark:bg-[#13161C] border border-slate-200 dark:border-[#292E38] rounded-2xl gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-white dark:bg-[#1C2028] border border-slate-200 dark:border-[#292E38] text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-sm">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h5 className="text-xs font-bold text-slate-800 dark:text-[#F5F7FA] truncate">
+                          {uploadedFile.name}
+                        </h5>
+                        <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 uppercase">
+                          {uploadedFile.isPdf ? 'PDF' : 'IMAGE'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-400 dark:text-[#747C89]">
+                        {uploadedFile.size} • Attached
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions: View in Same Tab, Download, Modal & Remove */}
+                  <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap shrink-0">
+                    {/* Toggle View in Same Tab */}
+                    <Button
+                      type="button"
+                      variant={showInlinePreview ? 'primary' : 'outline'}
+                      size="small"
+                      icon={showInlinePreview ? EyeOff : Eye}
+                      onClick={() => setShowInlinePreview(!showInlinePreview)}
+                      className="text-xs py-1.5 px-3"
+                    >
+                      {showInlinePreview ? 'Hide in Tab' : 'View in Same Tab'}
+                    </Button>
+
+                    {/* Direct 1-Click Download Button */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="small"
+                      icon={Download}
+                      onClick={handleDownloadAttachment}
+                      className="text-xs py-1.5 px-3 hover:text-blue-600 dark:hover:text-blue-400"
+                      title="Download file directly"
+                    >
+                      Download
+                    </Button>
+
+                    {/* Full Screen View Modal */}
+                    <button
+                      type="button"
+                      onClick={() => setIsPreviewOpen(true)}
+                      className="p-1.5 rounded-lg border border-slate-200 dark:border-[#292E38] text-slate-500 hover:text-slate-800 dark:text-[#A9B0BC] dark:hover:text-[#F5F7FA] hover:bg-slate-100 dark:hover:bg-[#1E232D] transition-colors cursor-pointer"
+                      title="Open full view modal"
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </button>
+
+                    {/* Remove File */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUploadedFile(null);
+                        setShowInlinePreview(false);
+                      }}
+                      className="p-1.5 rounded-lg border border-slate-200 dark:border-[#292E38] text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                      title="Remove attachment"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* INLINE IN-TAB VIEWER (Renders directly inside Section 5 in the exact same tab) */}
+                {showInlinePreview && (
+                  <div className="rounded-2xl border border-slate-200 dark:border-[#292E38] bg-white dark:bg-[#161921] p-3 sm:p-4 shadow-sm animate-in fade-in duration-200 space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#22262F] pb-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="font-semibold text-slate-700 dark:text-[#A9B0BC]">
+                          Viewing {uploadedFile.name} (Same Tab)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleDownloadAttachment}
+                          className="flex items-center gap-1 text-[11px] text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          Download
+                        </button>
+                        <span className="text-slate-300 dark:text-[#2A303C]">|</span>
+                        <button
+                          type="button"
+                          onClick={() => setIsPreviewOpen(true)}
+                          className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 dark:text-[#A9B0BC] dark:hover:text-white cursor-pointer"
+                        >
+                          <Maximize2 className="w-3.5 h-3.5" />
+                          Full View
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Content Display: Image vs PDF */}
+                    <div className="w-full flex items-center justify-center bg-slate-50 dark:bg-[#0E1015] rounded-xl overflow-hidden min-h-[300px] max-h-[520px]">
+                      {uploadedFile.isImage ? (
+                        <div className="p-3 w-full h-full flex items-center justify-center">
+                          <img
+                            src={uploadedFile.previewUrl}
+                            alt={uploadedFile.name}
+                            className="max-h-[460px] max-w-full object-contain rounded-lg shadow-sm"
+                          />
+                        </div>
+                      ) : (
+                        <iframe
+                          src={`${uploadedFile.blobUrl || uploadedFile.previewUrl}#toolbar=1`}
+                          title={uploadedFile.name}
+                          className="w-full h-[460px] border-0 rounded-xl"
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -723,9 +740,9 @@ export const AddPurchasePage = () => {
             deliveryDate,
             returnDeadline: calculatedReturnDeadline,
             warrantyExpiry: calculatedWarrantyExpiry,
-            receiptUrl: uploadedFile?.previewUrl || '',
+            receiptUrl: uploadedFile?.blobUrl || uploadedFile?.previewUrl || '',
             receiptFileName: uploadedFile?.name || '',
-            receiptFileType: uploadedFile?.fileType || '',
+            receiptFileType: uploadedFile?.receiptFileType || uploadedFile?.fileType || '',
           }}
         />
 
@@ -747,12 +764,6 @@ export const AddPurchasePage = () => {
           </Button>
         </div>
       </form>
-
-      {/* Upgrade Plan Modal */}
-      <UpgradePlanModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-      />
     </div>
   );
 };

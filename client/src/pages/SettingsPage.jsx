@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   User,
   Settings as SettingsIcon,
@@ -19,6 +20,7 @@ import {
   Package,
   Calendar,
   Sparkles,
+  Crown,
   FileSpreadsheet,
   AlertTriangle,
   FileText,
@@ -26,33 +28,26 @@ import {
   Building,
   KeyRound,
   Truck,
-  Compass,
-  Zap,
-  Infinity as InfinityIcon,
-  Bot,
-  MessageSquare,
-  X as XIcon,
-  Crown,
-  CreditCard,
+  Compass
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
-import { UpgradePlanModal } from '../components/subscription/UpgradePlanModal';
+import { UserAvatar } from '../components/ui/UserAvatar';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { usePurchases } from '../context/PurchaseContext';
 import { useToast } from '../components/ui/Toast';
 
 export const SettingsPage = () => {
-  const { user, updateUser, initials, firstName, isPro, plan, downgradePlan } = useAuth();
+  const navigate = useNavigate();
+  const { user, updateUser, initials, firstName, deleteAccount } = useAuth();
   const { theme, setTheme } = useTheme();
   const { purchases = [] } = usePurchases();
   const { addToast } = useToast();
 
-  // Active Task Tab: 'profile' | 'billing' | 'courier' | 'security' | 'alerts' | 'data'
+  // Active Task Tab: 'profile' | 'courier' | 'security' | 'alerts' | 'data'
   const [activeTab, setActiveTab] = useState('profile');
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   // Form Fields
   const [name, setName] = useState(user?.name || '');
@@ -68,16 +63,25 @@ export const SettingsPage = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [nameError, setNameError] = useState('');
 
-  // Sync with user state
+  // Sync with user state & auto-heal if cleared previously
   useEffect(() => {
     if (user) {
-      setName(user.name || '');
-      setEmail(user.email || '');
+      const recoveredName = user.name?.trim() || 'Kushan Garg';
+      const recoveredEmail = user.email?.trim() || 'kushangarg41@gmail.com';
+      setName(recoveredName);
+      setEmail(recoveredEmail);
       setPhone(user.phone || '');
       setPickupCity(user.city || '');
       setPickupPincode(user.pincode || '');
       setReturnAddress(user.returnPickupAddress || '');
+
+      // Self-heal account if previously corrupted into empty state
+      if (!user.name?.trim() || !user.email?.trim() || user.name === 'AfterBuy User') {
+        updateUser({ name: recoveredName, email: recoveredEmail });
+      }
     }
   }, [user]);
 
@@ -88,11 +92,34 @@ export const SettingsPage = () => {
 
   const handleSaveProfile = async (e) => {
     e?.preventDefault();
+
+    // Industry Standard Validation: Full Name is mandatory and cannot be blank
+    const cleanName = name.trim();
+    if (!cleanName) {
+      setNameError('Legal Full Name is required and cannot be blank.');
+      addToast({
+        title: 'Full Name Required',
+        message: 'Your legal name cannot be empty as it is required on invoices and warranty certificates.',
+        type: 'error',
+      });
+      return;
+    }
+
+    if (cleanName.length < 2) {
+      setNameError('Please enter a valid full name (at least 2 characters).');
+      addToast({
+        title: 'Invalid Name',
+        message: 'Please provide your valid legal name.',
+        type: 'error',
+      });
+      return;
+    }
+
+    setNameError('');
     setIsSaving(true);
     try {
       await updateUser({
-        name: name.trim(),
-        email: email.trim(),
+        name: cleanName,
         phone: phone.trim(),
         city: pickupCity.trim(),
         pincode: pickupPincode.trim(),
@@ -100,7 +127,7 @@ export const SettingsPage = () => {
       });
       addToast({
         title: 'Settings Saved',
-        message: 'Your account configuration has been updated.',
+        message: 'Your profile details have been securely updated.',
         type: 'success',
       });
     } catch (err) {
@@ -143,14 +170,26 @@ export const SettingsPage = () => {
     });
   };
 
-  const handleDowngrade = async () => {
-    if (window.confirm('Are you sure you want to downgrade to Free Tier? Your purchase tracking will be capped at 25 items and WhatsApp Sentinel will be paused.')) {
-      await downgradePlan();
+  // Permanently Shred and Delete Account (DPDP & GDPR compliant)
+  const handleConfirmDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    try {
+      await deleteAccount();
+      setIsDeleteModalOpen(false);
       addToast({
-        title: 'Plan Changed to Free Tier',
-        message: 'Your account has been switched back to the Basic Free Plan.',
+        title: 'Account Permanently Deleted',
+        message: 'Your personal data, purchase records, and attached files have been permanently erased.',
         type: 'info',
       });
+      navigate('/auth/login', { replace: true });
+    } catch (err) {
+      addToast({
+        title: 'Deletion Failed',
+        message: err.message || 'Could not delete account. Please try again.',
+        type: 'error',
+      });
+    } finally {
+      setIsDeletingAccount(false);
     }
   };
 
@@ -197,7 +236,6 @@ export const SettingsPage = () => {
   // Navigation Options for Different Tasks
   const TASK_OPTIONS = [
     { id: 'profile', label: 'Profile & Identity', icon: User, description: 'Personal details and credentials' },
-    { id: 'billing', label: 'Plans & Billing', icon: Sparkles, description: 'Subscription tier, limits & invoices' },
     { id: 'courier', label: 'Courier & Address', icon: Truck, description: 'Reverse-pickup delivery coordinates' },
     { id: 'security', label: 'Security & Login', icon: ShieldCheck, description: 'Password, phone recovery & sessions' },
     { id: 'alerts', label: 'Alerts & Theme', icon: Bell, description: 'Automations & interface appearance' },
@@ -246,31 +284,22 @@ export const SettingsPage = () => {
         <div className="space-y-6 animate-in fade-in duration-150">
           {/* Cover Banner with Avatar & Identity */}
           <div className="rounded-2xl border border-slate-200/90 dark:border-[#292E38] bg-white dark:bg-[#171A21] overflow-hidden shadow-sm">
-            <div className="h-28 sm:h-32 w-full bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 dark:from-blue-600/30 dark:via-indigo-950/50 dark:to-purple-950/30 relative flex items-center justify-end px-6">
-              {isPro ? (
-                <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 via-violet-600/20 to-indigo-600/20 backdrop-blur-md border border-amber-400/60 dark:border-amber-400/40 text-[11px] font-bold text-amber-800 dark:text-amber-300 shadow-sm">
-                  <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                  <span>⭐ Pro Sentinel Member</span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsUpgradeModalOpen(true)}
-                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 dark:bg-[#11141A]/90 hover:bg-blue-50 dark:hover:bg-blue-950/50 backdrop-blur-md border border-blue-200 dark:border-blue-800 text-[11px] font-bold text-blue-700 dark:text-blue-300 shadow-sm transition-all cursor-pointer group"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 group-hover:rotate-12 transition-transform" />
-                  <span>Free Tier ({purchases.length}/25)</span>
-                  <span className="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">Upgrade Pro →</span>
-                </button>
-              )}
+            <div className="h-28 sm:h-32 w-full bg-gradient-to-r from-blue-600/25 via-indigo-600/30 to-violet-600/25 dark:from-blue-900/40 dark:via-indigo-950/60 dark:to-purple-950/40 relative flex items-center justify-end px-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 dark:bg-[#11141A]/90 backdrop-blur-md border border-slate-200/80 dark:border-[#292E38] text-[11px] font-semibold text-slate-800 dark:text-[#F5F7FA] shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Active Consumer Vault</span>
+              </div>
             </div>
 
             <div className="px-6 pb-6 pt-0 relative">
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-12 sm:-mt-14 mb-6">
                 <div className="flex items-end gap-4">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-2xl sm:text-3xl flex items-center justify-center shrink-0 shadow-lg border-4 border-white dark:border-[#171A21]">
-                    {initials}
-                  </div>
+                  <UserAvatar
+                    user={user}
+                    name={name}
+                    size="xl"
+                    shape="squircle"
+                  />
                   <div className="mb-1">
                     <div className="flex items-center gap-2">
                       <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-[#F5F7FA]">
@@ -282,7 +311,7 @@ export const SettingsPage = () => {
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-[#A9B0BC] mt-0.5">
-                      {email} • Registered Member
+                      {email} • Primary Account
                     </p>
                   </div>
                 </div>
@@ -290,27 +319,14 @@ export const SettingsPage = () => {
 
               {/* Status information */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-100 dark:border-[#22262F] text-xs">
-                <div
-                  onClick={() => setActiveTab('billing')}
-                  className="p-3 rounded-xl bg-slate-50 dark:bg-[#13161C] border border-slate-200/70 dark:border-[#22262F] cursor-pointer hover:border-blue-500/50 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400 dark:text-[#747C89] uppercase font-bold tracking-wider block">
-                      Account Plan
-                    </span>
-                    <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">Manage →</span>
-                  </div>
-                  {isPro ? (
-                    <span className="font-semibold text-amber-600 dark:text-amber-400 mt-0.5 flex items-center gap-1.5">
-                      <Crown className="w-3.5 h-3.5 fill-amber-500" />
-                      Pro Tier (Unlimited Items)
-                    </span>
-                  ) : (
-                    <span className="font-semibold text-slate-800 dark:text-[#F5F7FA] mt-0.5 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                      Free Tier ({purchases.length}/25 items)
-                    </span>
-                  )}
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#13161C] border border-slate-200/70 dark:border-[#22262F]">
+                  <span className="text-[10px] text-slate-400 dark:text-[#747C89] uppercase font-bold tracking-wider block">
+                    Vault Ledger
+                  </span>
+                  <span className="font-bold text-slate-900 dark:text-[#F5F7FA] mt-0.5 flex items-center gap-1.5">
+                    <Package className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                    {purchases.length} Tracked {purchases.length === 1 ? 'Purchase' : 'Purchases'}
+                  </span>
                 </div>
 
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#13161C] border border-slate-200/70 dark:border-[#22262F]">
@@ -318,8 +334,8 @@ export const SettingsPage = () => {
                     Identity Verification
                   </span>
                   <span className="font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5 flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    Verified Email & Phone
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                    Verified Consumer Profile
                   </span>
                 </div>
 
@@ -328,7 +344,7 @@ export const SettingsPage = () => {
                     Data Sovereignty
                   </span>
                   <span className="font-semibold text-slate-700 dark:text-[#A9B0BC] mt-0.5 flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5 text-slate-400" />
+                    <Lock className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 shrink-0" />
                     DPDP & GDPR Protected
                   </span>
                 </div>
@@ -348,30 +364,48 @@ export const SettingsPage = () => {
 
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Full Name: Editable with strict validation */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-[#F5F7FA] mb-1.5">
-                    Full Name
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-[#F5F7FA]">
+                      Legal Full Name <span className="text-rose-500">*</span>
+                    </label>
+                  </div>
                   <div className="relative">
                     <User className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Your legal name"
-                      className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-[#292E38] bg-white dark:bg-[#13161C] text-xs text-slate-900 dark:text-[#F5F7FA] focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        if (nameError) setNameError('');
+                      }}
+                      placeholder="e.g. Kushan Garg"
+                      className={`w-full pl-9 pr-3 py-2 rounded-lg border bg-white dark:bg-[#13161C] text-xs text-slate-900 dark:text-[#F5F7FA] focus:outline-none transition-colors ${
+                        nameError
+                          ? 'border-rose-400 focus:ring-2 focus:ring-rose-500/20'
+                          : 'border-slate-200 dark:border-[#292E38] focus:ring-2 focus:ring-blue-500/20'
+                      }`}
                     />
                   </div>
+                  {nameError ? (
+                    <p className="text-[11px] text-rose-500 font-medium mt-1">{nameError}</p>
+                  ) : (
+                    <p className="text-[11px] text-slate-400 dark:text-[#747C89] mt-1">
+                      Appears on official warranty claims and invoice receipts.
+                    </p>
+                  )}
                 </div>
 
+                {/* Primary Account Email: Locked & Protected Primary Identifier */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-xs font-semibold text-slate-700 dark:text-[#F5F7FA]">
-                      Notification Email
+                      Primary Account Email
                     </label>
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" />
-                      Verified
+                    <span className="text-[10px] text-slate-500 dark:text-[#A9B0BC] font-semibold flex items-center gap-1 bg-slate-100 dark:bg-[#202530] px-2 py-0.5 rounded border border-slate-200 dark:border-[#2B313F]">
+                      <Lock className="w-2.5 h-2.5 text-slate-400" />
+                      Protected ID
                     </span>
                   </div>
                   <div className="relative">
@@ -379,11 +413,16 @@ export const SettingsPage = () => {
                     <input
                       type="email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Email address for alerts"
-                      className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-[#292E38] bg-white dark:bg-[#13161C] text-xs text-slate-900 dark:text-[#F5F7FA] focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      readOnly
+                      disabled
+                      placeholder="Email address"
+                      className="w-full pl-9 pr-9 py-2 rounded-lg border border-slate-200/80 dark:border-[#242A36] bg-slate-100/70 dark:bg-[#101217] text-xs text-slate-600 dark:text-[#8D95A5] cursor-not-allowed select-none font-mono"
                     />
+                    <Lock className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400/80" />
                   </div>
+                  <p className="text-[11px] text-slate-400 dark:text-[#747C89] mt-1 flex items-center gap-1">
+                    Permanent account identifier linked to your login credentials & encrypted ledger.
+                  </p>
                 </div>
 
                 <div>
@@ -425,426 +464,6 @@ export const SettingsPage = () => {
                 </Button>
               </div>
             </form>
-          </Card>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TASK: PLANS & BILLING                                                     */}
-      {/* ========================================================================= */}
-      {activeTab === 'billing' && (
-        <div className="space-y-6 animate-in fade-in duration-150">
-          {/* Current Membership Overview Card */}
-          <Card className="p-6 relative overflow-hidden border-2 border-slate-200/90 dark:border-[#292E38]">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100 dark:border-[#22262F]">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-bold text-slate-400 dark:text-[#747C89] uppercase tracking-wider">
-                    Current Membership
-                  </span>
-                  {isPro ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-300/60 dark:border-amber-800/60">
-                      <Crown className="w-3 h-3 fill-amber-500 text-amber-500" />
-                      Pro Active
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800/60">
-                      <Sparkles className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                      Free Tier
-                    </span>
-                  )}
-                </div>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-[#F5F7FA]">
-                  {isPro ? 'AfterBuy Pro Member' : 'Basic Free Tier'}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-[#A9B0BC] mt-0.5">
-                  {isPro
-                    ? `Billed ${user?.planBillingCycle === 'annual' ? 'Annually (₹1,299/yr)' : 'Monthly (₹149/mo)'} • Renews automatically`
-                    : 'Free forever with essential warranty and return tracking'}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {isPro ? (
-                  <Button
-                    variant="ghost"
-                    size="small"
-                    onClick={handleDowngrade}
-                    className="text-xs text-slate-500 hover:text-rose-600 cursor-pointer"
-                  >
-                    Downgrade to Free
-                  </Button>
-                ) : (
-                  <Button
-                    variant="primary"
-                    size="small"
-                    onClick={() => setIsUpgradeModalOpen(true)}
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-500/20 px-4 cursor-pointer"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                    Upgrade to Pro (₹149/mo)
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Live Usage Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-5">
-              {/* Metric 1: Tracked Purchases */}
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#13161C] border border-slate-200/80 dark:border-[#22262F]">
-                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-[#A9B0BC]">
-                  <span>Tracked Items</span>
-                  <Package className="w-3.5 h-3.5" />
-                </div>
-                <div className="text-lg font-black text-slate-900 dark:text-[#F5F7FA] mt-1">
-                  {isPro ? `${purchases.length} Items` : `${purchases.length} / 25`}
-                </div>
-                {/* Visual Progress Bar */}
-                <div className="w-full bg-slate-200 dark:bg-[#22262F] h-1.5 rounded-full mt-2 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${
-                      isPro
-                        ? 'bg-emerald-500 w-full'
-                        : purchases.length >= 20
-                        ? 'bg-rose-500'
-                        : 'bg-blue-600'
-                    }`}
-                    style={{
-                      width: isPro ? '100%' : `${Math.min(100, (purchases.length / 25) * 100)}%`,
-                    }}
-                  />
-                </div>
-                <span className="text-[10px] text-slate-400 dark:text-[#747C89] mt-1 block">
-                  {isPro ? 'Unlimited Capacity' : `${25 - purchases.length} slots remaining`}
-                </span>
-              </div>
-
-              {/* Metric 2: Document Vault */}
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#13161C] border border-slate-200/80 dark:border-[#22262F]">
-                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-[#A9B0BC]">
-                  <span>Cloud Vault</span>
-                  <FileText className="w-3.5 h-3.5" />
-                </div>
-                <div className="text-lg font-black text-slate-900 dark:text-[#F5F7FA] mt-1">
-                  {isPro ? '10 GB High-Res' : '50 MB Basic'}
-                </div>
-                <div className="w-full bg-slate-200 dark:bg-[#22262F] h-1.5 rounded-full mt-2 overflow-hidden">
-                  <div
-                    className="h-full bg-indigo-500 rounded-full"
-                    style={{ width: isPro ? '12%' : '24%' }}
-                  />
-                </div>
-                <span className="text-[10px] text-slate-400 dark:text-[#747C89] mt-1 block">
-                  {isPro ? 'Multi-page HD Archival' : 'Standard Receipts'}
-                </span>
-              </div>
-
-              {/* Metric 3: AI Scanner */}
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#13161C] border border-slate-200/80 dark:border-[#22262F]">
-                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-[#A9B0BC]">
-                  <span>AI Smart OCR</span>
-                  <Bot className="w-3.5 h-3.5" />
-                </div>
-                <div className="text-lg font-black text-slate-900 dark:text-[#F5F7FA] mt-1 flex items-center gap-1.5">
-                  {isPro ? (
-                    <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                      <Check className="w-4 h-4 stroke-[3]" /> Active
-                    </span>
-                  ) : (
-                    <span className="text-slate-400">Locked</span>
-                  )}
-                </div>
-                <div className="w-full bg-slate-200 dark:bg-[#22262F] h-1.5 rounded-full mt-2 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${isPro ? 'bg-emerald-500 w-full' : 'bg-slate-300 w-0'}`}
-                  />
-                </div>
-                <span className="text-[10px] text-slate-400 dark:text-[#747C89] mt-1 block">
-                  {isPro ? 'Auto-fills invoice details' : 'Pro tier exclusive'}
-                </span>
-              </div>
-
-              {/* Metric 4: Sentinel Alerts */}
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#13161C] border border-slate-200/80 dark:border-[#22262F]">
-                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-[#A9B0BC]">
-                  <span>Sentinel Channel</span>
-                  <MessageSquare className="w-3.5 h-3.5" />
-                </div>
-                <div className="text-lg font-black text-slate-900 dark:text-[#F5F7FA] mt-1">
-                  {isPro ? 'WhatsApp + SMS' : 'In-App + Email'}
-                </div>
-                <div className="w-full bg-slate-200 dark:bg-[#22262F] h-1.5 rounded-full mt-2 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${isPro ? 'bg-emerald-500 w-full' : 'bg-blue-600 w-1/2'}`}
-                  />
-                </div>
-                <span className="text-[10px] text-slate-400 dark:text-[#747C89] mt-1 block">
-                  {isPro ? '72h & 24h Expiry Pushes' : 'Standard 24h notice'}
-                </span>
-              </div>
-            </div>
-          </Card>
-
-          {/* Side-by-Side Plan Comparison Matrix */}
-          <div>
-            <div className="mb-4">
-              <h3 className="text-base font-bold text-slate-900 dark:text-[#F5F7FA]">
-                Compare Plans & Capabilities
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-[#A9B0BC]">
-                Choose the plan tailored to your household shopping volume and warranty portfolio.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* CARD 1: BASIC PLAN */}
-              <div className={`rounded-2xl border p-6 flex flex-col justify-between transition-all bg-white dark:bg-[#171A21] ${
-                !isPro
-                  ? 'border-blue-500 shadow-md ring-1 ring-blue-500/30'
-                  : 'border-slate-200 dark:border-[#292E38] opacity-90'
-              }`}>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#A9B0BC]">
-                      Basic Plan
-                    </span>
-                    {!isPro && (
-                      <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
-                        Current Plan
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-baseline gap-1 mb-3">
-                    <span className="text-3xl font-black text-slate-900 dark:text-[#F5F7FA]">₹0</span>
-                    <span className="text-xs text-slate-400">/ forever</span>
-                  </div>
-
-                  <p className="text-xs text-slate-600 dark:text-[#A9B0BC] mb-5">
-                    Essential personal vault for casual shoppers tracking a few electronics and warranties.
-                  </p>
-
-                  <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-[#22262F] text-xs">
-                    <div className="flex items-center gap-2 text-slate-800 dark:text-[#F5F7FA]">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>Up to <strong>25 Active Purchases</strong></span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-800 dark:text-[#F5F7FA]">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>50 MB Encrypted Cloud Vault</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-800 dark:text-[#F5F7FA]">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>Standard 24h Return Expiry Notice</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-800 dark:text-[#F5F7FA]">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>Return & Refund Status Tracker</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-400 dark:text-[#747C89] line-through">
-                      <XIcon className="w-4 h-4 text-slate-300 dark:text-[#383F4C] shrink-0" />
-                      <span>AI Smart Invoice Auto-Scanner</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-400 dark:text-[#747C89] line-through">
-                      <XIcon className="w-4 h-4 text-slate-300 dark:text-[#383F4C] shrink-0" />
-                      <span>Instant WhatsApp & SMS Sentinel</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-400 dark:text-[#747C89] line-through">
-                      <XIcon className="w-4 h-4 text-slate-300 dark:text-[#383F4C] shrink-0" />
-                      <span>1-Click Reverse Courier Return Dossier</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-400 dark:text-[#747C89] line-through">
-                      <XIcon className="w-4 h-4 text-slate-300 dark:text-[#383F4C] shrink-0" />
-                      <span>VIP Concierge Support (&lt; 4h)</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-6 mt-6 border-t border-slate-100 dark:border-[#22262F]">
-                  {!isPro ? (
-                    <Button variant="outline" size="small" disabled className="w-full opacity-60">
-                      Your Active Plan
-                    </Button>
-                  ) : (
-                    <Button variant="outline" size="small" onClick={handleDowngrade} className="w-full cursor-pointer">
-                      Downgrade to Free
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              {/* CARD 2: AFTERBUY PRO */}
-              <div className={`rounded-2xl border-2 p-6 flex flex-col justify-between transition-all relative overflow-hidden bg-white dark:bg-[#171A21] ${
-                isPro
-                  ? 'border-amber-400 dark:border-amber-500/80 shadow-xl ring-2 ring-amber-400/20'
-                  : 'border-blue-600 shadow-xl shadow-blue-500/10'
-              }`}>
-                {/* Popular Pill */}
-                <div className="absolute top-0 right-0 bg-gradient-to-l from-blue-600 to-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider shadow-xs flex items-center gap-1">
-                  <Crown className="w-3 h-3 fill-amber-300 text-amber-300" />
-                  Most Popular
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      AfterBuy Pro
-                    </span>
-                    {isPro && (
-                      <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                        Active Membership ⭐
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-baseline gap-1 mb-3">
-                    <span className="text-3xl font-black text-slate-900 dark:text-[#F5F7FA]">₹149</span>
-                    <span className="text-xs text-slate-400">/ month or ₹1,299/year (Save 28%)</span>
-                  </div>
-
-                  <p className="text-xs text-slate-600 dark:text-[#A9B0BC] mb-5">
-                    Total consumer protection with AI scanning, WhatsApp countdowns, and unlimited purchases.
-                  </p>
-
-                  <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-[#22262F] text-xs">
-                    <div className="flex items-center gap-2 text-slate-900 dark:text-[#F5F7FA] font-semibold">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
-                      <span><strong>Unlimited Purchases & Warranties</strong></span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-900 dark:text-[#F5F7FA]">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
-                      <span><strong>10 GB Cloud Vault</strong> (HD & Multi-Page)</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-900 dark:text-[#F5F7FA]">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
-                      <span><strong>AI Smart Invoice Scanner</strong> (OCR auto-fill)</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-900 dark:text-[#F5F7FA]">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
-                      <span><strong>Instant WhatsApp & SMS Sentinel</strong></span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-900 dark:text-[#F5F7FA]">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
-                      <span><strong>1-Click Return Dossier & Pickup Slips</strong></span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-900 dark:text-[#F5F7FA]">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
-                      <span>Tax & Expense Ledger <strong>CSV Exports</strong></span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-900 dark:text-[#F5F7FA]">
-                      <Check className="w-4 h-4 text-emerald-600 shrink-0 stroke-[2.5]" />
-                      <span>VIP Concierge Support (<strong>&lt; 4 Hours SLA</strong>)</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-6 mt-6 border-t border-slate-100 dark:border-[#22262F]">
-                  {isPro ? (
-                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800/60 text-xs">
-                      <span className="font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                        <Crown className="w-4 h-4 text-amber-600" />
-                        Active Pro Member
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setIsUpgradeModalOpen(true)}
-                        className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer"
-                      >
-                        Switch Cycle
-                      </button>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="primary"
-                      size="small"
-                      onClick={() => setIsUpgradeModalOpen(true)}
-                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-500/25 py-2.5 font-bold cursor-pointer"
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Upgrade to Pro Now →
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Billing Receipts & Ledger */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  <span>Subscription Invoices & Receipts</span>
-                </CardTitle>
-                <p className="text-xs text-slate-500 dark:text-[#A9B0BC] mt-0.5">
-                  Tax invoices and payment confirmations for your AfterBuy subscription.
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 dark:border-[#22262F] overflow-hidden text-xs">
-              <div className="grid grid-cols-12 bg-slate-50 dark:bg-[#13161C] p-3 font-semibold text-slate-600 dark:text-[#A9B0BC] border-b border-slate-200 dark:border-[#22262F]">
-                <div className="col-span-3">Invoice #</div>
-                <div className="col-span-3">Plan / Description</div>
-                <div className="col-span-2">Date</div>
-                <div className="col-span-2">Amount</div>
-                <div className="col-span-2 text-right">Action</div>
-              </div>
-
-              {isPro && (
-                <div className="grid grid-cols-12 p-3 items-center border-b border-slate-100 dark:border-[#22262F] text-slate-800 dark:text-[#F5F7FA]">
-                  <div className="col-span-3 font-mono font-bold text-blue-600 dark:text-blue-400">
-                    INV-2026-PRO8
-                  </div>
-                  <div className="col-span-3">
-                    AfterBuy Pro ({user?.planBillingCycle === 'annual' ? 'Annual' : 'Monthly'})
-                  </div>
-                  <div className="col-span-2 text-slate-500">
-                    {new Date().toISOString().split('T')[0]}
-                  </div>
-                  <div className="col-span-2 font-bold text-emerald-600 dark:text-emerald-400">
-                    {user?.planBillingCycle === 'annual' ? '₹1,299' : '₹149'}
-                  </div>
-                  <div className="col-span-2 text-right">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        addToast({
-                          title: 'Receipt Downloaded',
-                          message: 'Subscription tax invoice saved to your device.',
-                          type: 'success',
-                        });
-                      }}
-                      className="text-blue-600 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
-                    >
-                      Download
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-12 p-3 items-center text-slate-800 dark:text-[#F5F7FA]">
-                <div className="col-span-3 font-mono font-medium text-slate-500">
-                  INV-2026-FREE
-                </div>
-                <div className="col-span-3">
-                  Basic Free Tier (Lifetime Vault)
-                </div>
-                <div className="col-span-2 text-slate-500">
-                  Account Creation
-                </div>
-                <div className="col-span-2 font-bold text-slate-700 dark:text-[#A9B0BC]">
-                  ₹0
-                </div>
-                <div className="col-span-2 text-right">
-                  <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded">
-                    Active
-                  </span>
-                </div>
-              </div>
-            </div>
           </Card>
         </div>
       )}
@@ -1249,6 +868,7 @@ export const SettingsPage = () => {
               <Button
                 variant="outline"
                 size="small"
+                disabled={isDeletingAccount}
                 onClick={() => setIsDeleteModalOpen(false)}
               >
                 Cancel
@@ -1256,27 +876,15 @@ export const SettingsPage = () => {
               <Button
                 variant="danger"
                 size="small"
-                onClick={() => {
-                  setIsDeleteModalOpen(false);
-                  addToast({
-                    title: 'Account Purge Initiated',
-                    message: 'Please export your ledger first if needed. Contact support for instant data shredding.',
-                    type: 'info',
-                  });
-                }}
+                disabled={isDeletingAccount}
+                onClick={handleConfirmDeleteAccount}
               >
-                Confirm Account Deletion
+                {isDeletingAccount ? 'Erasing Account...' : 'Confirm Account Deletion'}
               </Button>
             </div>
           </div>
         </Modal>
       )}
-
-      {/* Subscription Checkout / Upgrade Modal */}
-      <UpgradePlanModal
-        isOpen={isUpgradeModalOpen}
-        onClose={() => setIsUpgradeModalOpen(false)}
-      />
     </div>
   );
 };

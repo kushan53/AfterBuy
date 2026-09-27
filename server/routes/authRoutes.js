@@ -13,7 +13,7 @@ import {
   resetPasswordWithOtp,
   resetPassword,
   findAccount,
-  subscribePlan,
+  deleteAccount,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -32,6 +32,6 @@ router.post('/reset-password-otp', resetPasswordWithOtp);
 router.post('/reset-password', resetPassword);
 router.get('/me', protect, getMe);
 router.put('/profile', protect, updateProfile);
-router.post('/subscribe', protect, subscribePlan);
+router.delete('/account', protect, deleteAccount);
 
 export default router;

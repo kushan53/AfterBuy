@@ -5,6 +5,24 @@ const AuthContext = createContext(null);
 const USER_STORAGE_KEY = 'afterbuy_current_user';
 const TOKEN_STORAGE_KEY = 'afterbuy_auth_token';
 
+const sanitizeUser = (userData) => {
+  if (!userData || typeof userData !== 'object') return userData;
+  const clean = { ...userData };
+  if (
+    clean.avatar &&
+    (typeof clean.avatar !== 'string' ||
+      clean.avatar.trim() === '' ||
+      clean.avatar === 'null' ||
+      clean.avatar === 'undefined' ||
+      (!clean.avatar.startsWith('http://') &&
+        !clean.avatar.startsWith('https://') &&
+        !clean.avatar.startsWith('data:image/')))
+  ) {
+    delete clean.avatar;
+  }
+  return clean;
+};
+
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(
     () => localStorage.getItem(TOKEN_STORAGE_KEY) || sessionStorage.getItem(TOKEN_STORAGE_KEY) || null
@@ -16,7 +34,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const stored = localStorage.getItem(USER_STORAGE_KEY) || sessionStorage.getItem(USER_STORAGE_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        return sanitizeUser(JSON.parse(stored));
       }
     } catch (e) {
       console.error('Failed to parse user from storage', e);
@@ -37,11 +55,12 @@ export const AuthProvider = ({ children }) => {
       try {
         const res = await apiRequest('/auth/me');
         if (res?.success && res.user) {
-          setUser(res.user);
+          const sanitized = sanitizeUser(res.user);
+          setUser(sanitized);
           if (localStorage.getItem(TOKEN_STORAGE_KEY)) {
-            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(res.user));
+            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(sanitized));
           } else {
-            sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(res.user));
+            sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(sanitized));
           }
         } else {
           // Token invalid or expired
@@ -106,13 +125,14 @@ export const AuthProvider = ({ children }) => {
     }
 
     if (data.user) {
-      setUser(data.user);
+      const sanitized = sanitizeUser(data.user);
+      setUser(sanitized);
       if (remember) {
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(sanitized));
       } else {
-        sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+        sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(sanitized));
       }
-      return data.user;
+      return sanitized;
     }
   };
 
@@ -128,46 +148,29 @@ export const AuthProvider = ({ children }) => {
     }
 
     if (data.user) {
-      setUser(data.user);
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
-      return data.user;
+      const sanitized = sanitizeUser(data.user);
+      setUser(sanitized);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(sanitized));
+      return sanitized;
     }
   };
 
   const loginWithGoogle = async (googlePayload) => {
-    try {
-      const data = await apiRequest('/auth/google', {
-        method: 'POST',
-        body: JSON.stringify(googlePayload),
-      });
+    const data = await apiRequest('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify(googlePayload),
+    });
 
-      if (data?.token) {
-        localStorage.setItem(TOKEN_STORAGE_KEY, data.token);
-        setToken(data.token);
-      }
+    if (data.token) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, data.token);
+      setToken(data.token);
+    }
 
-      if (data?.user) {
-        setUser(data.user);
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
-        return data.user;
-      }
-    } catch (err) {
-      console.warn('Backend Google sign-in deferred, activating verified session:', err.message);
-      const fallbackUser = {
-        _id: `g_${googlePayload.googleId || Date.now()}`,
-        id: `g_${googlePayload.googleId || Date.now()}`,
-        name: googlePayload.name || 'Google User',
-        email: googlePayload.email,
-        avatar: googlePayload.avatar || '',
-        provider: 'google',
-        plan: 'free',
-      };
-      const fallbackToken = `google_session_${Date.now()}`;
-      localStorage.setItem(TOKEN_STORAGE_KEY, fallbackToken);
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(fallbackUser));
-      setToken(fallbackToken);
-      setUser(fallbackUser);
-      return fallbackUser;
+    if (data.user) {
+      const sanitized = sanitizeUser(data.user);
+      setUser(sanitized);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(sanitized));
+      return sanitized;
     }
   };
 
@@ -190,9 +193,10 @@ export const AuthProvider = ({ children }) => {
     }
 
     if (data.user) {
-      setUser(data.user);
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
-      return data.user;
+      const sanitized = sanitizeUser(data.user);
+      setUser(sanitized);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(sanitized));
+      return sanitized;
     }
   };
 
@@ -202,23 +206,33 @@ export const AuthProvider = ({ children }) => {
       setToken(newToken);
     }
     if (newUser) {
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(newUser));
-      setUser(newUser);
+      const sanitized = sanitizeUser(newUser);
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(sanitized));
+      setUser(sanitized);
     }
   };
 
   const updateUser = async (fields) => {
-    setUser((prev) => (prev ? { ...prev, ...fields } : fields));
+    // Industry Security: Do not allow erasing core account identity with empty strings
+    const sanitized = { ...fields };
+    if (sanitized.name !== undefined && !sanitized.name.trim()) {
+      delete sanitized.name;
+    }
+    if (sanitized.email !== undefined && !sanitized.email.trim()) {
+      delete sanitized.email;
+    }
+
+    setUser((prev) => (prev ? sanitizeUser({ ...prev, ...sanitized }) : sanitizeUser(sanitized)));
 
     const token = localStorage.getItem(TOKEN_STORAGE_KEY);
     if (token) {
       try {
         const data = await apiRequest('/auth/profile', {
           method: 'PUT',
-          body: JSON.stringify(fields),
+          body: JSON.stringify(sanitized),
         });
         if (data.user) {
-          setUser(data.user);
+          setUser(sanitizeUser(data.user));
         }
       } catch (error) {
         console.warn('Backend profile update warning:', error.message);
@@ -226,66 +240,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const upgradePlan = async ({ billingCycle = 'monthly', paymentMethod = 'UPI' } = {}) => {
-    const expires = new Date();
-    if (billingCycle === 'annual') {
-      expires.setFullYear(expires.getFullYear() + 1);
-    } else {
-      expires.setMonth(expires.getMonth() + 1);
-    }
-
-    const optimisticUser = {
-      ...user,
-      plan: 'pro',
-      planBillingCycle: billingCycle,
-      planStartedAt: new Date().toISOString(),
-      planExpiresAt: expires.toISOString(),
-    };
-    setUser(optimisticUser);
-
-    const token = localStorage.getItem(TOKEN_STORAGE_KEY) || sessionStorage.getItem(TOKEN_STORAGE_KEY);
-    if (token) {
-      try {
-        const data = await apiRequest('/auth/subscribe', {
-          method: 'POST',
-          body: JSON.stringify({ plan: 'pro', billingCycle, paymentMethod }),
+  const deleteAccount = async () => {
+    try {
+      const token = localStorage.getItem(TOKEN_STORAGE_KEY) || sessionStorage.getItem(TOKEN_STORAGE_KEY);
+      if (token) {
+        await apiRequest('/auth/account', {
+          method: 'DELETE',
         });
-        if (data.user) {
-          setUser(data.user);
-          return data;
-        }
-      } catch (err) {
-        console.warn('Backend subscribe sync notice:', err.message);
       }
+    } catch (err) {
+      console.warn('Backend delete account error:', err.message);
+    } finally {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(USER_STORAGE_KEY);
+      localStorage.removeItem('afterbuy_purchases_v1');
+      sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+      sessionStorage.removeItem(USER_STORAGE_KEY);
+      setToken(null);
+      setUser(null);
     }
-    return { success: true, user: optimisticUser };
-  };
-
-  const downgradePlan = async () => {
-    const optimisticUser = {
-      ...user,
-      plan: 'free',
-      planBillingCycle: 'monthly',
-      planExpiresAt: null,
-    };
-    setUser(optimisticUser);
-
-    const token = localStorage.getItem(TOKEN_STORAGE_KEY) || sessionStorage.getItem(TOKEN_STORAGE_KEY);
-    if (token) {
-      try {
-        const data = await apiRequest('/auth/subscribe', {
-          method: 'POST',
-          body: JSON.stringify({ plan: 'free' }),
-        });
-        if (data.user) {
-          setUser(data.user);
-          return data;
-        }
-      } catch (err) {
-        console.warn('Backend downgrade sync notice:', err.message);
-      }
-    }
-    return { success: true, user: optimisticUser };
   };
 
   const logout = () => {
@@ -302,8 +275,6 @@ export const AuthProvider = ({ children }) => {
     }, 600);
   };
 
-  const isPro = user?.plan === 'pro';
-
   return (
     <AuthContext.Provider
       value={{
@@ -312,8 +283,6 @@ export const AuthProvider = ({ children }) => {
         loading,
         isLoggingOut,
         isAuthenticated: !!token && !!user,
-        isPro,
-        plan: user?.plan || 'free',
         initials: getInitials(user?.name),
         firstName: getFirstName(user?.name),
         login,
@@ -322,8 +291,7 @@ export const AuthProvider = ({ children }) => {
         sendLoginOtp,
         loginWithOtp,
         updateUser,
-        upgradePlan,
-        downgradePlan,
+        deleteAccount,
         setSession,
         logout,
       }}

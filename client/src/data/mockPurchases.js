@@ -11,7 +11,7 @@ export const INITIAL_PURCHASES = [
   {
     id: 'pur-1',
     name: 'Sony WH-1000XM4',
-    merchant: 'Amazon India',
+    merchant: 'Amazon',
     orderId: '402-892182-1',
     category: 'Electronics',
     price: 19990,
@@ -51,7 +51,7 @@ export const INITIAL_PURCHASES = [
   {
     id: 'pur-3',
     name: 'Keychron K2 Keyboard',
-    merchant: 'Keychron India',
+    merchant: 'Keychron',
     orderId: 'KC-28491',
     category: 'Gadgets',
     price: 8299,

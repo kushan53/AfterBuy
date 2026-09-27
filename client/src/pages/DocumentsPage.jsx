@@ -39,11 +39,31 @@ export const DocumentsPage = () => {
   });
 
   const handleDownload = (item) => {
-    addToast({
-      title: 'Invoice Retrieved',
-      message: `Tax invoice for ${item.name} downloaded securely.`,
-      type: 'success',
-    });
+    const fileUrl = item.receiptUrl;
+    const fileName = item.receiptFileName || `Tax_Invoice_${item.orderId || item.id || 'INV'}.pdf`;
+
+    if (fileUrl) {
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      addToast({
+        title: 'Invoice Downloaded',
+        message: `Tax invoice for ${item.name} downloaded successfully.`,
+        type: 'success',
+      });
+    } else {
+      setSelectedDoc(item);
+      setIsViewerOpen(true);
+      addToast({
+        title: 'Opening Invoice',
+        message: `Viewing digital tax invoice for ${item.name}.`,
+        type: 'info',
+      });
+    }
   };
 
   return (

@@ -62,14 +62,22 @@ export const ReturnsPage = () => {
     );
   });
 
-  const handleInitiateReturn = (item) => {
-    requestReturn(item.id);
-    setIsReturnModalOpen(false);
-    addToast({
-      title: 'Return Initiated',
-      message: `Return requested for ${item.name}. Status updated and reverse pickup scheduled.`,
-      type: 'success',
-    });
+  const handleInitiateReturn = async (item) => {
+    try {
+      await requestReturn(item.id);
+      setIsReturnModalOpen(false);
+      addToast({
+        title: 'Return Initiated',
+        message: `Return requested for ${item.name}. Status updated and reverse pickup scheduled.`,
+        type: 'success',
+      });
+    } catch (err) {
+      addToast({
+        title: 'Return Request Failed',
+        message: err.message || 'Could not initiate return right now. Please try again.',
+        type: 'error',
+      });
+    }
   };
 
   return (
@@ -341,6 +349,20 @@ export const ReturnsPage = () => {
                   {selectedReturnItem.deadlineText} ({selectedReturnItem.returnDeadline})
                 </span>
               </div>
+              {selectedReturnItem.storeSupportUrl && (
+                <div className="flex justify-between items-center text-xs pt-1.5 border-t border-slate-200/60 dark:border-[#22262F]">
+                  <span className="text-slate-500 dark:text-[#A9B0BC]">Store Portal</span>
+                  <a
+                    href={selectedReturnItem.storeSupportUrl.startsWith('http') || selectedReturnItem.storeSupportUrl.startsWith('mailto:') ? selectedReturnItem.storeSupportUrl : `https://${selectedReturnItem.storeSupportUrl}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 dark:text-blue-400 font-semibold hover:underline inline-flex items-center gap-1"
+                  >
+                    <span>Open Store Portal</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
             </div>
 
             <p className="text-xs text-slate-600 dark:text-[#A9B0BC] leading-relaxed">

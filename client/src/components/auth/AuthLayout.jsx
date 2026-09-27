@@ -27,7 +27,7 @@ export const AuthLayout = ({ children }) => {
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo on the left */}
           <Link to="/" className="flex items-center gap-2 group shrink-0">
-            <div className="h-8 w-8 rounded-lg bg-blue-600 text-white font-bold text-sm flex items-center justify-center tracking-wider shadow-xs group-hover:bg-blue-700 transition-colors shrink-0">
+            <div className="h-8.5 w-8.5 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-600 text-white font-black text-sm flex items-center justify-center tracking-wider shadow-sm shadow-blue-500/20 ring-1 ring-white/20 group-hover:scale-105 transition-all shrink-0">
               AB
             </div>
             <div className="flex flex-col">

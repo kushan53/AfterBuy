@@ -31,6 +31,7 @@ import { Dropdown, DropdownItem, DropdownSeparator } from '../components/ui/Drop
 import { usePurchases } from '../context/PurchaseContext';
 import { useToast } from '../components/ui/Toast';
 import { formatINR, getReturnInfo, getWarrantyInfo, getLifecycleStatus } from '../utils/purchaseUtils';
+import { SearchableStoreSelect } from '../components/ui/SearchableStoreSelect';
 
 export const PurchasesPage = () => {
   const navigate = useNavigate();
@@ -651,19 +652,15 @@ export const PurchasesPage = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-[#F5F7FA] mb-1">
-                  Merchant / Store
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editFormData.merchant}
-                  onChange={(e) => setEditFormData({ ...editFormData, merchant: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-[#292E38] bg-white dark:bg-[#13161C] text-xs text-slate-900 dark:text-[#F5F7FA] focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <SearchableStoreSelect
+                label="Store / Merchant *"
+                value={editFormData.merchant}
+                onChange={(val) => setEditFormData((prev) => ({ ...prev, merchant: val }))}
+                onStoreChange={(store) => {
+                  if (store.category) setEditFormData((prev) => ({ ...prev, category: store.category }));
+                }}
+              />
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-[#F5F7FA] mb-1">

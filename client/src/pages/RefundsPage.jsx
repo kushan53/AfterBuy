@@ -49,14 +49,22 @@ export const RefundsPage = () => {
     return true;
   });
 
-  const handleSettleRefund = (refund) => {
-    markRefundReceived(refund.id);
-    setIsSettleModalOpen(false);
-    addToast({
-      title: 'Refund Settled',
-      message: `₹${refund.amount.toLocaleString('en-IN')} marked as received in your bank account!`,
-      type: 'success',
-    });
+  const handleSettleRefund = async (refund) => {
+    try {
+      await markRefundReceived(refund.id);
+      setIsSettleModalOpen(false);
+      addToast({
+        title: 'Refund Settled',
+        message: `₹${refund.amount.toLocaleString('en-IN')} marked as received in your bank account!`,
+        type: 'success',
+      });
+    } catch (err) {
+      addToast({
+        title: 'Settlement Failed',
+        message: err.message || 'Could not settle refund right now. Please try again.',
+        type: 'error',
+      });
+    }
   };
 
   return (

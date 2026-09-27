@@ -43,23 +43,39 @@ export const DashboardPage = () => {
   } = usePurchases();
 
   // Handle Request Return interaction
-  const handleRequestReturn = (item) => {
-    requestReturn(item.id);
-    addToast({
-      title: 'Return Initiated',
-      message: `Return requested for ${item.name}. Status updated and moved to Returns tracker.`,
-      type: 'success',
-    });
+  const handleRequestReturn = async (item) => {
+    try {
+      await requestReturn(item.id);
+      addToast({
+        title: 'Return Initiated',
+        message: `Return requested for ${item.name}. Status updated and moved to Returns tracker.`,
+        type: 'success',
+      });
+    } catch (err) {
+      addToast({
+        title: 'Return Request Failed',
+        message: err.message || 'Could not initiate return request. Please try again.',
+        type: 'error',
+      });
+    }
   };
 
   // Handle Mark Received / Settle interaction
-  const handleMarkReceived = (ref) => {
-    markRefundReceived(ref.id);
-    addToast({
-      title: 'Refund Settled',
-      message: `${ref.name} refund of ₹${ref.amount.toLocaleString('en-IN')} marked as received in your account.`,
-      type: 'success',
-    });
+  const handleMarkReceived = async (ref) => {
+    try {
+      await markRefundReceived(ref.id);
+      addToast({
+        title: 'Refund Settled',
+        message: `${ref.name} refund of ₹${ref.amount.toLocaleString('en-IN')} marked as received in your account.`,
+        type: 'success',
+      });
+    } catch (err) {
+      addToast({
+        title: 'Settlement Failed',
+        message: err.message || 'Could not settle refund. Please try again.',
+        type: 'error',
+      });
+    }
   };
 
   return (

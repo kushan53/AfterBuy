@@ -37,6 +37,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Dropdown, DropdownItem, DropdownSeparator, DropdownLabel } from '../components/ui/Dropdown';
+import { UserAvatar } from '../components/ui/UserAvatar';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { usePurchases } from '../context/PurchaseContext';
@@ -72,7 +73,7 @@ export const LandingPage = () => {
           
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group shrink-0">
-            <div className="h-8 w-8 rounded-lg bg-blue-600 text-white font-bold text-sm flex items-center justify-center tracking-wider shadow-xs group-hover:bg-blue-700 transition-colors shrink-0">
+            <div className="h-8.5 w-8.5 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-600 text-white font-black text-sm flex items-center justify-center tracking-wider shadow-sm shadow-blue-500/20 ring-1 ring-white/20 group-hover:scale-105 transition-all shrink-0">
               AB
             </div>
             <div className="flex flex-col">
@@ -153,14 +154,10 @@ export const LandingPage = () => {
                 trigger={
                   <button
                     type="button"
-                    className="relative flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-semibold text-xs select-none ring-2 ring-blue-500/25 hover:ring-blue-500/60 shadow-xs hover:scale-105 active:scale-95 transition-all cursor-pointer shrink-0"
+                    className="focus:outline-hidden cursor-pointer"
                     aria-label="User account"
                   >
-                    {user?.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full object-cover" />
-                    ) : (
-                      <span>{initials}</span>
-                    )}
+                    <UserAvatar user={user} size="sm" interactive />
                   </button>
                 }
               >
@@ -232,13 +229,7 @@ export const LandingPage = () => {
             {isAuthenticated ? (
               <div className="pt-3 border-t border-slate-100 dark:border-[#22262F] space-y-2.5">
                 <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#171A21] border border-slate-100 dark:border-[#22262F]">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-semibold text-xs shrink-0 ring-2 ring-blue-500/20">
-                    {user?.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full object-cover" />
-                    ) : (
-                      initials
-                    )}
-                  </div>
+                  <UserAvatar user={user} size="sm" />
                   <div className="min-w-0 flex-1">
                     <div className="text-xs font-semibold text-slate-900 dark:text-[#F5F7FA] truncate">
                       {user?.name || 'User'}
@@ -316,11 +307,19 @@ export const LandingPage = () => {
 
         {/* Primary CTA */}
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link to="/signup" className="w-full sm:w-auto">
-            <Button variant="primary" size="large" icon={ArrowRight} iconPosition="right" className="w-full sm:w-auto px-8 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30">
-              Start Tracking Free
-            </Button>
-          </Link>
+          {isAuthenticated ? (
+            <Link to="/app/dashboard" className="w-full sm:w-auto">
+              <Button variant="primary" size="large" icon={ArrowRight} iconPosition="right" className="w-full sm:w-auto px-8 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30">
+                Go to Dashboard
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/signup" className="w-full sm:w-auto">
+              <Button variant="primary" size="large" icon={ArrowRight} iconPosition="right" className="w-full sm:w-auto px-8 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30">
+                Start Tracking Free
+              </Button>
+            </Link>
+          )}
           <a href="#preview" className="w-full sm:w-auto">
             <Button variant="outline" size="large" className="w-full sm:w-auto px-6">
               Explore Live Product
@@ -391,17 +390,11 @@ export const LandingPage = () => {
               {/* Context Greeting Bar with User Avatar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/60 dark:border-white/10 pb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-sm flex items-center justify-center shadow-xs ring-2 ring-blue-500/20 shrink-0">
-                    {isAuthenticated ? (
-                      user?.avatar ? (
-                        <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
-                      ) : (
-                        initials
-                      )
-                    ) : (
-                      'AB'
-                    )}
-                  </div>
+                  <UserAvatar
+                    user={isAuthenticated ? user : null}
+                    name={isAuthenticated ? user?.name : 'AB'}
+                    size="md"
+                  />
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#F5F7FA]">
@@ -1435,11 +1428,19 @@ export const LandingPage = () => {
           </p>
 
           <div className="pt-4 flex justify-center">
-            <Link to="/signup">
-              <Button variant="primary" size="large" icon={ArrowRight} iconPosition="right" className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-3.5 shadow-xl shadow-blue-600/30">
-                Claim Your Free Account
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <Link to="/app/dashboard">
+                <Button variant="primary" size="large" icon={ArrowRight} iconPosition="right" className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-3.5 shadow-xl shadow-blue-600/30">
+                  Go to Dashboard →
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/signup">
+                <Button variant="primary" size="large" icon={ArrowRight} iconPosition="right" className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-3.5 shadow-xl shadow-blue-600/30">
+                  Claim Your Free Account
+                </Button>
+              </Link>
+            )}
           </div>
 
           <p className="text-[11px] text-slate-400 dark:text-[#747C89]">
@@ -1458,7 +1459,7 @@ export const LandingPage = () => {
             {/* Column 1: Brand & Mission (full width on mobile, 2 cols on tablet/desktop) */}
             <div className="sm:col-span-2 space-y-4">
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-lg bg-blue-600 text-white font-bold text-sm flex items-center justify-center tracking-wider shadow-xs">
+                <div className="h-8.5 w-8.5 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-violet-600 text-white font-black text-sm flex items-center justify-center tracking-wider shadow-sm shadow-blue-500/20 ring-1 ring-white/20 shrink-0">
                   AB
                 </div>
                 <div className="flex flex-col">
@@ -1506,8 +1507,17 @@ export const LandingPage = () => {
               <ul className="space-y-2 text-xs text-slate-500 dark:text-[#A9B0BC]">
                 <li><Link to="/privacy" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-slate-700 dark:text-[#F5F7FA]">Privacy Policy</Link></li>
                 <li><Link to="/terms" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-slate-700 dark:text-[#F5F7FA]">Terms of Service</Link></li>
-                <li><Link to="/login" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-slate-700 dark:text-[#F5F7FA]">Sign In</Link></li>
-                <li><Link to="/signup" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-slate-700 dark:text-[#F5F7FA]">Create Account</Link></li>
+                {isAuthenticated ? (
+                  <>
+                    <li><Link to="/app/dashboard" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-slate-700 dark:text-[#F5F7FA]">Dashboard</Link></li>
+                    <li><Link to="/app/settings" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-slate-700 dark:text-[#F5F7FA]">Settings</Link></li>
+                  </>
+                ) : (
+                  <>
+                    <li><Link to="/login" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-slate-700 dark:text-[#F5F7FA]">Sign In</Link></li>
+                    <li><Link to="/signup" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-slate-700 dark:text-[#F5F7FA]">Create Account</Link></li>
+                  </>
+                )}
               </ul>
             </div>
           </div>

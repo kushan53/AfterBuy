@@ -13,3 +13,6 @@ export { EmptyState } from './EmptyState';
 export { StatCard } from './StatCard';
 export { SectionHeader } from './SectionHeader';
 export { StatusBadge } from './StatusBadge';
+export { SearchableStoreSelect } from './SearchableStoreSelect';
+export { AdvancedDatePicker } from './AdvancedDatePicker';
+export { UserAvatar } from './UserAvatar';
