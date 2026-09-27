@@ -29,16 +29,17 @@ export const getReturnInfo = (purchase) => {
     return { label: 'Expired', badgeStatus: 'return-expired' };
   }
 
-  // Calculate live days if returnDeadline exists (ISO YYYY-MM-DD or readable)
-  if (purchase.deadlineDate) {
+  // Calculate live days if returnDeadline or deadlineDate exists (ISO YYYY-MM-DD or readable)
+  const targetDeadline = purchase.deadlineDate || purchase.returnDeadline;
+  if (targetDeadline && !isNaN(new Date(targetDeadline).getTime())) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const deadline = new Date(purchase.deadlineDate);
+    const deadline = new Date(targetDeadline);
     deadline.setHours(0, 0, 0, 0);
     const diffDays = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) {
-      return { label: 'Expired', badgeStatus: 'return-expired' };
+      return { label: 'Expired', badgeStatus: 'return-expired', isUrgent: false };
     }
     if (diffDays === 0) {
       return { label: 'Ends today', badgeStatus: 'return-expiring', isUrgent: true };
@@ -46,12 +47,21 @@ export const getReturnInfo = (purchase) => {
     if (diffDays === 1) {
       return { label: 'Tomorrow', badgeStatus: 'return-expiring', isUrgent: true };
     }
+    if (diffDays === 2) {
+      return { label: '2 days left', badgeStatus: 'return-expiring', isUrgent: true };
+    }
     return { label: `${diffDays} days left`, badgeStatus: 'return-eligible', isUrgent: false };
   }
 
-  // Fallback to deadlineText if preset
+  // Fallback to deadlineText or isUrgentReturn flag if preset
   if (purchase.deadlineText) {
-    const isUrgent = purchase.deadlineText === 'Tomorrow' || purchase.deadlineText === 'Ends today';
+    const isUrgent =
+      purchase.deadlineText === 'Tomorrow' ||
+      purchase.deadlineText === 'Ends today' ||
+      purchase.deadlineText === '2 days left' ||
+      purchase.deadlineText.includes('2 days') ||
+      Boolean(purchase.isUrgentReturn) ||
+      purchase.returnStatus === 'expiring';
     return {
       label: purchase.deadlineText,
       badgeStatus: isUrgent ? 'return-expiring' : 'return-eligible',
@@ -59,7 +69,7 @@ export const getReturnInfo = (purchase) => {
     };
   }
 
-  return { label: 'Return Eligible', badgeStatus: 'return-eligible' };
+  return { label: 'Return Eligible', badgeStatus: 'return-eligible', isUrgent: false };
 };
 
 /**

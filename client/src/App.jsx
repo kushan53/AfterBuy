@@ -4,6 +4,7 @@ import { ToastProvider } from './components/ui/Toast';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { PurchaseProvider } from './context/PurchaseContext';
+import { AlertProvider } from './context/AlertContext';
 import { AppShell } from './components/layout/AppShell';
 import { ScrollToTop } from './components/layout/ScrollToTop';
 import { ScrollToTopButton } from './components/layout/ScrollToTopButton';
@@ -34,7 +35,8 @@ export function App() {
       <ToastProvider>
         <AuthProvider>
           <PurchaseProvider>
-            <BrowserRouter>
+            <AlertProvider>
+              <BrowserRouter>
               <ScrollToTop />
               <ScrollToTopButton />
               <Routes>
@@ -107,7 +109,8 @@ export function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>
-        </PurchaseProvider>
+        </AlertProvider>
+      </PurchaseProvider>
       </AuthProvider>
     </ToastProvider>
     </ThemeProvider>

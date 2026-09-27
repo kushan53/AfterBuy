@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Bell, Menu, Plus, Command, Sun, Moon, Laptop, Check, User, Settings, LogOut, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Search, Bell, Menu, Plus, Command, Sun, Moon, Laptop, Check, User, Settings, LogOut, CheckCircle2, ArrowLeft, Sparkles, Radio } from 'lucide-react';
 import { Dropdown, DropdownItem, DropdownSeparator, DropdownLabel } from '../ui/Dropdown';
 import { Button } from '../ui/Button';
 import { UserAvatar } from '../ui/UserAvatar';
 import { CommandPalette } from './CommandPalette';
 import { useAuth } from '../../context/AuthContext';
 import { usePurchases } from '../../context/PurchaseContext';
+import { useAlerts } from '../../context/AlertContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../ui/Toast';
 
@@ -16,6 +17,7 @@ export const Topbar = ({ onMenuClick, onQuickAddClick }) => {
   const { addToast } = useToast();
   const { user, initials, logout } = useAuth();
   const { urgentReturns, overdueRefunds, expiringWarrantiesList } = usePurchases();
+  const { permission, requestPermission, triggerTestAlert } = useAlerts();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
   const [readNotificationIds, setReadNotificationIds] = useState([]);
@@ -219,14 +221,37 @@ export const Topbar = ({ onMenuClick, onQuickAddClick }) => {
               >
                 <Bell className="w-4 h-4" />
                 {unreadNotifications.length > 0 && (
-                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white dark:ring-[#11141A]" />
+                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-[#11141A] animate-pulse" />
                 )}
               </button>
             }
           >
-            <DropdownLabel>
-              Notifications {unreadNotifications.length > 0 ? `(${unreadNotifications.length} new)` : ''}
-            </DropdownLabel>
+            <div className="px-3 py-2 border-b border-slate-100 dark:border-[#22262F] flex items-center justify-between gap-2">
+              <span className="text-xs font-bold text-slate-900 dark:text-[#F5F7FA]">
+                Notifications {unreadNotifications.length > 0 ? `(${unreadNotifications.length} new)` : ''}
+              </span>
+              <button
+                type="button"
+                onClick={triggerTestAlert}
+                className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                title="Test live visual alert and desktop notification"
+              >
+                Test Alert
+              </button>
+            </div>
+
+            {permission !== 'granted' && (
+              <div className="p-2.5 bg-blue-50/70 dark:bg-blue-950/40 border-b border-blue-100 dark:border-blue-900/50 flex items-center justify-between text-[11px] text-blue-700 dark:text-blue-300">
+                <span className="font-medium">Enable real-time push alerts</span>
+                <button
+                  type="button"
+                  onClick={requestPermission}
+                  className="font-bold underline cursor-pointer hover:text-blue-800"
+                >
+                  Enable
+                </button>
+              </div>
+            )}
 
             {unreadNotifications.length > 0 ? (
               <>

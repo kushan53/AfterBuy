@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { RealTimeAlertSentinel } from '../alerts/RealTimeAlertSentinel';
 
 export const AppShell = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export const AppShell = () => {
 
         {/* Dynamic Page Content */}
         <main className="flex-1 px-3 pb-6 pt-20 sm:px-6 sm:pb-8 sm:pt-[5.5rem] lg:px-8 lg:pb-10 lg:pt-24 max-w-7xl w-full mx-auto min-w-0">
+          <RealTimeAlertSentinel />
           <Outlet />
         </main>
       </div>

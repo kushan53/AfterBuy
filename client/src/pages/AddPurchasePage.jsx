@@ -192,12 +192,18 @@ export const AddPurchasePage = () => {
       today.setHours(0, 0, 0, 0);
       const diffDays = Math.ceil((baseDate - today) / (1000 * 60 * 60 * 24));
 
-      if (diffDays <= 0) {
+      if (diffDays < 0) {
         returnStatus = 'expired';
         deadlineText = 'Expired';
+      } else if (diffDays === 0) {
+        returnStatus = 'expiring';
+        deadlineText = 'Ends today';
       } else if (diffDays === 1) {
         returnStatus = 'expiring';
         deadlineText = 'Tomorrow';
+      } else if (diffDays === 2) {
+        returnStatus = 'expiring';
+        deadlineText = '2 days left';
       } else {
         returnStatus = 'eligible';
         deadlineText = `${diffDays} days left`;

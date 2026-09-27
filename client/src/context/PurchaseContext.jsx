@@ -4,10 +4,85 @@ import { useAuth } from './AuthContext';
 
 const PurchaseContext = createContext(null);
 
-const normalizePurchase = (p) => ({
-  ...p,
-  id: p._id || p.id,
-});
+const normalizePurchase = (p) => {
+  const normalized = {
+    ...p,
+    id: p._id || p.id,
+  };
+
+  // If already in a non-eligible lifecycle state, preserve that
+  if (
+    normalized.returnStatus === 'return_requested' ||
+    normalized.returnStatus === 'picked_up' ||
+    normalized.returnStatus === 'returned' ||
+    normalized.returnStatus === 'no_return'
+  ) {
+    normalized.isUrgentReturn = false;
+    return normalized;
+  }
+
+  // Calculate dynamic diffDays from returnDeadline or deliveryDate + returnWindowDays
+  let targetDate = null;
+  if (normalized.returnDeadline && !isNaN(new Date(normalized.returnDeadline).getTime())) {
+    targetDate = new Date(normalized.returnDeadline);
+  } else if (normalized.deadlineDate && !isNaN(new Date(normalized.deadlineDate).getTime())) {
+    targetDate = new Date(normalized.deadlineDate);
+  } else if (normalized.deliveryDate && !isNaN(new Date(normalized.deliveryDate).getTime())) {
+    const d = new Date(normalized.deliveryDate);
+    const days = parseInt(normalized.returnWindowDays, 10) || 7;
+    d.setDate(d.getDate() + days);
+    targetDate = d;
+  } else if (normalized.purchaseDate && !isNaN(new Date(normalized.purchaseDate).getTime())) {
+    const d = new Date(normalized.purchaseDate);
+    const days = parseInt(normalized.returnWindowDays, 10) || 7;
+    d.setDate(d.getDate() + days);
+    targetDate = d;
+  }
+
+  if (targetDate) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    targetDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      normalized.returnStatus = 'expired';
+      normalized.deadlineText = 'Expired';
+      normalized.isUrgentReturn = false;
+    } else if (diffDays === 0) {
+      normalized.returnStatus = 'expiring';
+      normalized.deadlineText = 'Ends today';
+      normalized.isUrgentReturn = true;
+    } else if (diffDays === 1) {
+      normalized.returnStatus = 'expiring';
+      normalized.deadlineText = 'Tomorrow';
+      normalized.isUrgentReturn = true;
+    } else if (diffDays === 2) {
+      // 48-Hour Return Expiry Alert Rule
+      normalized.returnStatus = 'expiring';
+      normalized.deadlineText = '2 days left';
+      normalized.isUrgentReturn = true;
+    } else {
+      normalized.returnStatus = 'eligible';
+      normalized.deadlineText = `${diffDays} days left`;
+      normalized.isUrgentReturn = false;
+    }
+  } else if (normalized.deadlineText) {
+    const isUrgent =
+      normalized.deadlineText === 'Tomorrow' ||
+      normalized.deadlineText === 'Ends today' ||
+      normalized.deadlineText === '2 days left' ||
+      normalized.deadlineText.includes('2 days') ||
+      Boolean(normalized.isUrgentReturn);
+
+    if (isUrgent) {
+      normalized.returnStatus = 'expiring';
+      normalized.isUrgentReturn = true;
+    }
+  }
+
+  return normalized;
+};
 
 export const PurchaseProvider = ({ children }) => {
   const { token, isAuthenticated } = useAuth();

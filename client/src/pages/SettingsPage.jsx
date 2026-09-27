@@ -28,13 +28,15 @@ import {
   Building,
   KeyRound,
   Truck,
-  Compass
+  Compass,
+  Radio
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { useAuth } from '../context/AuthContext';
+import { useAlerts } from '../context/AlertContext';
 import { useTheme } from '../context/ThemeContext';
 import { usePurchases } from '../context/PurchaseContext';
 import { useToast } from '../components/ui/Toast';
@@ -42,6 +44,7 @@ import { useToast } from '../components/ui/Toast';
 export const SettingsPage = () => {
   const navigate = useNavigate();
   const { user, updateUser, initials, firstName, deleteAccount } = useAuth();
+  const { permission, requestPermission, triggerTestAlert } = useAlerts();
   const { theme, setTheme } = useTheme();
   const { purchases = [] } = usePurchases();
   const { addToast } = useToast();
@@ -708,6 +711,78 @@ export const SettingsPage = () => {
                 </div>
                 {theme === 'system' && <Check className="w-3.5 h-3.5 text-blue-600" />}
               </button>
+            </div>
+          </Card>
+
+          {/* Real-Time Push & Desktop Notifications Card */}
+          <Card className="p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2 mb-1">
+                  <Radio className="w-4 h-4 text-rose-500 animate-pulse" />
+                  <span>Real-Time Push & Desktop Notifications</span>
+                </CardTitle>
+                <p className="text-xs text-slate-500 dark:text-[#A9B0BC]">
+                  Instant system-level alerts delivered to your computer screen even when AfterBuy is in the background.
+                </p>
+              </div>
+
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold self-start sm:self-auto ${
+                permission === 'granted'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
+                  : permission === 'denied'
+                  ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60'
+                  : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60'
+              }`}>
+                <span className={`w-2 h-2 rounded-full ${
+                  permission === 'granted' ? 'bg-emerald-500' : permission === 'denied' ? 'bg-rose-500' : 'bg-amber-500'
+                }`} />
+                <span>
+                  {permission === 'granted'
+                    ? 'Desktop Push Active'
+                    : permission === 'denied'
+                    ? 'Blocked by Browser'
+                    : 'Permission Required'}
+                </span>
+              </span>
+            </div>
+
+            <div className="space-y-4 pt-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-50 dark:bg-[#13161C] border border-slate-200/80 dark:border-[#22262F]">
+                <div>
+                  <div className="text-xs font-semibold text-slate-800 dark:text-[#F5F7FA]">
+                    Browser Push Dispatcher
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-[#747C89]">
+                    {permission === 'granted'
+                      ? 'Permission granted. Native OS notification banners will alert you to urgent deadlines.'
+                      : 'Grant permission so your OS desktop notifies you before return windows expire.'}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {permission !== 'granted' && (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="small"
+                      onClick={requestPermission}
+                      className="text-xs py-1.5 px-3"
+                    >
+                      Enable Push Alerts
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="small"
+                    onClick={triggerTestAlert}
+                    className="text-xs py-1.5 px-3 hover:text-blue-600 dark:hover:text-blue-400"
+                  >
+                    Trigger Test Alert
+                  </Button>
+                </div>
+              </div>
             </div>
           </Card>
 
