@@ -1,11 +1,23 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import { User } from '../models/User.js';
 import { Purchase } from '../models/Purchase.js';
 import { sendOtpEmail } from '../utils/emailService.js';
+import { connectDB, ensureDBConnected } from '../config/db.js';
 
-const generateToken = (id, expiresIn = '30d') => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'afterbuy_secret_jwt_key_development_2026', {
+const generateToken = (userOrId, expiresIn = '30d') => {
+  let payload;
+  if (typeof userOrId === 'object' && userOrId !== null) {
+    payload = {
+      id: userOrId._id || userOrId.id,
+      name: userOrId.name || '',
+      email: userOrId.email || '',
+    };
+  } else {
+    payload = { id: userOrId };
+  }
+  return jwt.sign(payload, process.env.JWT_SECRET || 'afterbuy_secret_jwt_key_development_2026', {
     expiresIn,
   });
 };
@@ -18,6 +30,17 @@ export const registerUser = async (req, res) => {
 
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      const isConnected = await ensureDBConnected(3500);
+      if (!isConnected) {
+        return res.status(503).json({
+          success: false,
+          code: 'DATABASE_UNAVAILABLE',
+          message: 'Database connection is temporarily unavailable. Please verify MongoDB Atlas IP whitelist.',
+        });
+      }
     }
 
     const userExists = await User.findOne({ email });
@@ -33,7 +56,7 @@ export const registerUser = async (req, res) => {
       city: city || '',
     });
 
-    const token = generateToken(user._id);
+    const token = generateToken(user);
 
     res.status(201).json({
       success: true,
@@ -63,12 +86,26 @@ export const checkEmail = async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail });
+    if (mongoose.connection.readyState !== 1) {
+      await ensureDBConnected(2500);
+    }
+
+    let exists = false;
+    let name = null;
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const user = await User.findOne({ email: normalizedEmail });
+        exists = !!user;
+        name = user ? user.name : null;
+      } catch (dbErr) {
+        console.warn('[Check Email] DB query error:', dbErr.message);
+      }
+    }
 
     res.json({
       success: true,
-      exists: !!user,
-      name: user ? user.name : null,
+      exists,
+      name,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -84,6 +121,17 @@ export const loginUser = async (req, res) => {
 
     if (!email || !password) {
       return res.status(400).json({ success: false, message: 'Please provide email and password' });
+    }
+
+    if (mongoose.connection.readyState !== 1) {
+      const isConnected = await ensureDBConnected(3500);
+      if (!isConnected) {
+        return res.status(503).json({
+          success: false,
+          code: 'DATABASE_UNAVAILABLE',
+          message: 'Database connection is temporarily unavailable. Please verify MongoDB Atlas IP whitelist.',
+        });
+      }
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -105,7 +153,7 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    const token = generateToken(user._id);
+    const token = generateToken(user);
 
     res.status(200).json({
       success: true,
@@ -183,10 +231,23 @@ export const findAccount = async (req, res) => {
 // @route   GET /api/auth/me
 export const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    if (mongoose.connection.readyState === 1 && req.user?.id) {
+      try {
+        const user = await User.findById(req.user.id);
+        if (user) {
+          return res.status(200).json({
+            success: true,
+            user,
+          });
+        }
+      } catch (dbErr) {
+        console.warn('[Get Me] DB lookup error:', dbErr.message);
+      }
+    }
+
     res.status(200).json({
       success: true,
-      user,
+      user: req.user,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -233,41 +294,59 @@ export const googleAuth = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Google authentication failed: Email is required' });
     }
 
-    let user = await User.findOne({ email });
+    const cleanName = name || email.split('@')[0];
 
-    if (user) {
-      // User exists, update Google profile attributes if needed
-      if (!user.googleId && googleId) user.googleId = googleId;
-      if (!user.avatar && avatar) user.avatar = avatar;
-      await user.save();
-    } else {
-      // Create new user via Google
-      user = await User.create({
-        name: name || email.split('@')[0],
-        email,
-        googleId: googleId || '',
-        avatar: avatar || '',
-        provider: 'google',
-      });
+    // Fast check for existing user in DB (capped at 500ms to guarantee zero lag)
+    let existingUser = null;
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const findPromise = User.findOne({ email }).lean();
+        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 500));
+        existingUser = await Promise.race([findPromise, timeoutPromise]);
+      } catch (e) {
+        existingUser = null;
+      }
     }
 
-    const token = generateToken(user._id, '30d');
+    const userId = existingUser?._id || crypto.createHash('md5').update(email.toLowerCase().trim()).digest('hex').substring(0, 24);
 
-    res.status(200).json({
+    const resolvedName = existingUser?.name || cleanName;
+    const token = generateToken({ id: userId, name: resolvedName, email }, '30d');
+
+    // Async background sync: updates MongoDB Atlas without blocking user sign-in response
+    if (mongoose.connection.readyState === 1) {
+      User.findOneAndUpdate(
+        { email },
+        {
+          $setOnInsert: { name: cleanName, email, provider: 'google' },
+          $set: {
+            ...(googleId ? { googleId } : {}),
+            ...(avatar ? { avatar } : {}),
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      ).catch((err) => console.warn('[Google Auth Sync Notice]', err.message));
+    } else {
+      connectDB().catch(() => {});
+    }
+
+    // Return instant authenticated response (sub-second sign in)
+    return res.status(200).json({
       success: true,
       token,
       sessionDuration: '30-Day session',
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone || '',
-        city: user.city || '',
-        avatar: user.avatar || '',
-        returnPickupAddress: user.returnPickupAddress || '',
+        id: userId,
+        name: resolvedName,
+        email,
+        phone: existingUser?.phone || '',
+        city: existingUser?.city || '',
+        avatar: existingUser?.avatar || avatar || '',
+        returnPickupAddress: existingUser?.returnPickupAddress || '',
       },
     });
   } catch (error) {
+    console.error('[Google Auth Error]', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -350,7 +429,7 @@ export const verifyLoginOtp = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     // Generate 1-Day session JWT
-    const token = generateToken(user._id, '1d');
+    const token = generateToken(user, '1d');
 
     res.status(200).json({
       success: true,

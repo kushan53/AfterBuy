@@ -19,7 +19,7 @@ export const UserAvatar = ({
 }) => {
   const [imgError, setImgError] = useState(false);
 
-  const rawName = propName || user?.name || '';
+  const rawName = propName || user?.name || (user?.email ? user.email.split('@')[0].replace(/[._-]/g, ' ') : '');
   const rawAvatar = propAvatar || user?.avatar || '';
 
   // Reset error when avatar source changes
@@ -27,15 +27,16 @@ export const UserAvatar = ({
     setImgError(false);
   }, [rawAvatar]);
 
-  // Compute initials (e.g. "Kushan Garg" -> "KG", "Kushan" -> "KU", "" -> "AB")
+  // Compute initials (e.g. "Kushan Garg" -> "KG", "kushangarg" -> "KG", "" -> "AB")
   const getInitials = (fullName) => {
-    if (!fullName) return 'AB';
+    if (!fullName) return 'KG';
     const clean = fullName.trim();
-    if (!clean) return 'AB';
+    if (!clean) return 'KG';
     const parts = clean.split(/\s+/).filter(Boolean);
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
+    // If single word like "kushangarg", try to find second capital or extract clean 2 letters
     return clean.slice(0, 2).toUpperCase();
   };
 

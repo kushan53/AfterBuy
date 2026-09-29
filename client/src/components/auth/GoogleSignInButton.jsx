@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../ui/Toast';
 
@@ -9,10 +10,24 @@ export const GoogleSignInButton = ({ label = 'Continue with Google' }) => {
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
   const tokenClientRef = useRef(null);
+  const timeoutTimerRef = useRef(null);
 
   const googleClientId =
     import.meta.env.VITE_GOOGLE_CLIENT_ID ||
     '894400675739-05jcldhnve82v8nejgvsq52n4uqvaoq5.apps.googleusercontent.com';
+
+  // Clear timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutTimerRef.current) clearTimeout(timeoutTimerRef.current);
+    };
+  }, []);
+
+  // Cancel / Reset Google Sign In
+  const handleCancel = () => {
+    if (timeoutTimerRef.current) clearTimeout(timeoutTimerRef.current);
+    setLoading(false);
+  };
 
   // Initialize Google Identity Services OAuth2 Token Client
   useEffect(() => {
@@ -24,7 +39,13 @@ export const GoogleSignInButton = ({ label = 'Continue with Google' }) => {
         tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
           client_id: googleClientId,
           scope: 'email profile openid',
+          error_callback: (err) => {
+            console.warn('Google OAuth popup dismissed or error:', err);
+            handleCancel();
+          },
           callback: async (tokenResponse) => {
+            if (timeoutTimerRef.current) clearTimeout(timeoutTimerRef.current);
+
             if (tokenResponse?.error) {
               console.error('Google OAuth token error:', tokenResponse);
               setLoading(false);
@@ -96,6 +117,7 @@ export const GoogleSignInButton = ({ label = 'Continue with Google' }) => {
         tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
           client_id: googleClientId,
           scope: 'email profile openid',
+          error_callback: () => handleCancel(),
           callback: () => {},
         });
       } else {
@@ -110,11 +132,18 @@ export const GoogleSignInButton = ({ label = 'Continue with Google' }) => {
 
     try {
       setLoading(true);
-      // Trigger Google's popup; Google automatically closes the popup upon selection
+
+      // Auto-reset after 30 seconds if user left popup open or cancelled without selecting
+      if (timeoutTimerRef.current) clearTimeout(timeoutTimerRef.current);
+      timeoutTimerRef.current = setTimeout(() => {
+        setLoading(false);
+      }, 30000);
+
+      // Trigger Google's popup with select_account prompt
       tokenClientRef.current.requestAccessToken({ prompt: 'select_account' });
     } catch (err) {
       console.error('Google OAuth trigger error:', err);
-      setLoading(false);
+      handleCancel();
       addToast({
         title: 'Google Sign In Error',
         message: 'Could not open Google authentication popup.',
@@ -131,7 +160,7 @@ export const GoogleSignInButton = ({ label = 'Continue with Google' }) => {
         id="google-signin-btn"
         onClick={handleGoogleClick}
         disabled={loading}
-        className="w-full h-12 px-4 rounded-xl border border-slate-200/90 dark:border-[#2D333F] bg-white dark:bg-[#13161C] hover:bg-slate-50 dark:hover:bg-[#1A1E27] text-slate-700 dark:text-[#E6EAF2] hover:text-slate-900 dark:hover:text-white font-medium text-sm shadow-xs hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 flex items-center justify-center gap-3 cursor-pointer select-none active:scale-[0.99] disabled:opacity-60"
+        className="w-full h-12 px-4 rounded-xl border border-slate-200/90 dark:border-[#2D333F] bg-white dark:bg-[#13161C] hover:bg-slate-50 dark:hover:bg-[#1A1E27] text-slate-700 dark:text-[#E6EAF2] hover:text-slate-900 dark:hover:text-white font-medium text-sm shadow-xs hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 flex items-center justify-center gap-3 cursor-pointer select-none active:scale-[0.99] disabled:opacity-75"
       >
         {/* Crisp Multicolor Google G Logo SVG */}
         <svg className="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24">
@@ -154,6 +183,21 @@ export const GoogleSignInButton = ({ label = 'Continue with Google' }) => {
         </svg>
         <span>{loading ? 'Connecting to Google...' : label}</span>
       </button>
+
+      {/* Cancel & Go Back option when Google window is active */}
+      {loading && (
+        <div className="mt-2.5 flex items-center justify-center animate-in fade-in duration-200">
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-[#F5F7FA] hover:underline cursor-pointer py-1 px-2.5 rounded-lg transition-colors"
+            title="Cancel Google sign-in and return to login"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Cancel & choose account again</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

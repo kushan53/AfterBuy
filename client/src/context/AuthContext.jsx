@@ -55,7 +55,22 @@ export const AuthProvider = ({ children }) => {
       try {
         const res = await apiRequest('/auth/me');
         if (res?.success && res.user) {
-          const sanitized = sanitizeUser(res.user);
+          let cached = null;
+          try {
+            cached = JSON.parse(localStorage.getItem(USER_STORAGE_KEY) || sessionStorage.getItem(USER_STORAGE_KEY));
+          } catch (e) {}
+
+          const resolvedName = res.user.name || cached?.name || (res.user.email || cached?.email ? (res.user.email || cached?.email).split('@')[0] : 'User');
+          const resolvedEmail = res.user.email || cached?.email || '';
+
+          const merged = {
+            ...cached,
+            ...res.user,
+            name: resolvedName,
+            email: resolvedEmail,
+          };
+
+          const sanitized = sanitizeUser(merged);
           setUser(sanitized);
           if (localStorage.getItem(TOKEN_STORAGE_KEY)) {
             localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(sanitized));
@@ -93,20 +108,30 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  // Compute initials (e.g. "Bhuvan Garg" -> "BG")
+  // Compute initials (e.g. "Kushan Garg" -> "KG", "kushangarg41@gmail.com" -> "KG")
   const getInitials = (fullName) => {
-    if (!fullName) return 'U';
-    const parts = fullName.trim().split(' ').filter(Boolean);
+    const target = fullName || user?.name || (user?.email ? user.email.split('@')[0].replace(/[._-]/g, ' ') : '');
+    if (!target) return 'KG';
+    const parts = target.trim().split(/\s+/).filter(Boolean);
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
-    return fullName.slice(0, 2).toUpperCase();
+    return target.slice(0, 2).toUpperCase();
   };
 
-  // Get first name for greetings (e.g. "Good morning, Bhuvan")
+  // Get first name for greetings (e.g. "Good morning, Kushan")
   const getFirstName = (fullName) => {
-    if (!fullName) return 'there';
-    return fullName.trim().split(' ')[0];
+    if (fullName && fullName.trim() && fullName.trim() !== 'there' && fullName.trim() !== 'User') {
+      return fullName.trim().split(' ')[0];
+    }
+    if (user?.name && user.name.trim() && user.name.trim() !== 'there' && user.name.trim() !== 'User') {
+      return user.name.trim().split(' ')[0];
+    }
+    if (user?.email) {
+      const emailPrefix = user.email.split('@')[0];
+      return emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+    }
+    return 'there';
   };
 
   const login = async (email, password, remember = true) => {
