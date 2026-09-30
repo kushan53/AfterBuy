@@ -56,7 +56,7 @@ export const PhoneRecoveryBanner = () => {
   };
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-blue-200/80 dark:border-blue-900/50 bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-purple-50/80 dark:from-[#111625] dark:via-[#141829] dark:to-[#1a152d] p-4 sm:p-5 shadow-xs transition-all duration-300">
+    <div className="relative overflow-hidden rounded-2xl border border-blue-200/80 dark:border-blue-900/50 bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-purple-50/80 dark:from-[#111625] dark:via-[#141829] dark:to-[#1a152d] p-4 sm:p-5 shadow-xs transition-colors duration-200">
       {/* Background Ambient Glow */}
       <div className="absolute -top-12 -right-12 w-48 h-48 bg-gradient-to-br from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -125,14 +125,14 @@ export const PhoneRecoveryBanner = () => {
                 }}
                 placeholder="10-digit mobile number"
                 maxLength={14}
-                className="w-full sm:w-56 h-10 pl-11 pr-3 rounded-xl border border-slate-200 dark:border-[#2A3142] bg-white dark:bg-[#0E1117] text-slate-900 dark:text-[#F5F7FA] placeholder-slate-400 text-xs focus:outline-none focus:border-blue-600 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                className="w-full sm:w-56 h-10 pl-11 pr-3 rounded-xl border border-slate-200 dark:border-[#2A3142] bg-white dark:bg-[#0E1117] text-slate-900 dark:text-[#F5F7FA] placeholder-slate-400 text-xs focus:outline-none focus:border-blue-600 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-colors"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading || !phoneInput.trim()}
-              className="h-10 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:via-indigo-500 hover:to-purple-500 active:from-blue-700 text-white font-semibold text-xs shadow-sm shadow-blue-500/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="h-10 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:via-indigo-500 hover:to-purple-500 active:from-blue-700 text-white font-semibold text-xs shadow-sm shadow-blue-500/20 transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               {loading ? (
                 <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

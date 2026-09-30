@@ -101,3 +101,25 @@ body {
   width: 100%;
   min-height: 100vh;
 }
+
+img, svg, video, canvas, audio, iframe, embed, object {
+  max-width: 100%;
+}
+
+p, h1, h2, h3, h4, h5, h6, span {
+  overflow-wrap: break-word;
+}
+
+/* Optimize continuous viewport resizing: disable transitions during resize */
+.resizing-active * {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

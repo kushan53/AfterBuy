@@ -200,113 +200,196 @@ export const ReturnsPage = () => {
         </CardHeader>
         <CardContent className="p-0">
           {filteredItems.length > 0 ? (
-            <Table containerClassName="border-0 rounded-none">
-              <TableHeader>
-                <TableRow hoverable={false}>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Merchant</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Delivered</TableHead>
-                  <TableHead>Return Status</TableHead>
-                  <TableHead>Window / Courier</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <Table containerClassName="border-0 rounded-none">
+                  <TableHeader>
+                    <TableRow hoverable={false}>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Merchant</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Delivered</TableHead>
+                      <TableHead>Return Status</TableHead>
+                      <TableHead>Window / Courier</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredItems.map((item) => {
+                      const isEligible = item.returnStatus === 'eligible' || item.returnStatus === 'expiring';
+                      const isRequested = item.returnStatus === 'return_requested';
+                      const isPickedUp = item.returnStatus === 'picked_up';
+
+                      return (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-semibold text-slate-900 dark:text-[#F5F7FA]">
+                            <div className="flex flex-col">
+                              <span>{item.name}</span>
+                              {item.orderId && (
+                                <span className="text-[10px] font-mono text-slate-400 dark:text-[#747C89]">
+                                  {item.orderId}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-slate-600 dark:text-[#A9B0BC]">
+                            {item.merchant}
+                          </TableCell>
+                          <TableCell className="font-medium text-slate-900 dark:text-[#F5F7FA]">
+                            ₹{item.price.toLocaleString('en-IN')}
+                          </TableCell>
+                          <TableCell className="text-slate-500 dark:text-[#A9B0BC]">
+                            {item.deliveryDate}
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge
+                              status={
+                                item.returnStatus === 'expiring'
+                                  ? 'return-expiring'
+                                  : item.returnStatus === 'eligible'
+                                  ? 'return-eligible'
+                                  : item.returnStatus === 'return_requested'
+                                  ? 'return-requested'
+                                  : item.returnStatus === 'picked_up'
+                                  ? 'refund-overdue'
+                                  : 'return-eligible'
+                              }
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {isEligible ? (
+                              <span
+                                className={`font-semibold ${
+                                  item.isUrgentReturn || item.returnStatus === 'expiring'
+                                    ? 'text-amber-700 dark:text-amber-300'
+                                    : 'text-slate-600 dark:text-[#A9B0BC]'
+                                }`}
+                              >
+                                {item.deadlineText}
+                              </span>
+                            ) : isRequested ? (
+                              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                Pickup Scheduled
+                              </span>
+                            ) : isPickedUp ? (
+                              <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                                Courier in Transit
+                              </span>
+                            ) : (
+                              <span className="text-xs text-slate-400">Closed</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {isEligible ? (
+                              <Button
+                                variant={item.isUrgentReturn || item.returnStatus === 'expiring' ? 'primary' : 'outline'}
+                                size="small"
+                                className="text-xs py-1 px-2.5"
+                                onClick={() => {
+                                  setSelectedReturnItem(item);
+                                  setIsReturnModalOpen(true);
+                                }}
+                              >
+                                Request Return
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="small"
+                                className="text-xs py-1 px-2.5 text-blue-600 dark:text-blue-400"
+                                onClick={() => navigate('/app/refunds')}
+                              >
+                                Track Refund →
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden divide-y divide-slate-100 dark:divide-[#22262F] p-3 space-y-3">
                 {filteredItems.map((item) => {
                   const isEligible = item.returnStatus === 'eligible' || item.returnStatus === 'expiring';
                   const isRequested = item.returnStatus === 'return_requested';
                   const isPickedUp = item.returnStatus === 'picked_up';
 
                   return (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-semibold text-slate-900 dark:text-[#F5F7FA]">
-                        <div className="flex flex-col">
-                          <span>{item.name}</span>
-                          {item.orderId && (
-                            <span className="text-[10px] font-mono text-slate-400 dark:text-[#747C89]">
-                              {item.orderId}
+                    <div key={item.id} className="p-3 bg-slate-50/50 dark:bg-[#13161C] rounded-xl border border-slate-100 dark:border-[#22262F] space-y-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h4 className="font-semibold text-xs text-slate-900 dark:text-[#F5F7FA]">{item.name}</h4>
+                          <span className="text-[11px] text-slate-500 dark:text-[#747C89]">{item.merchant} • Delivered: {item.deliveryDate}</span>
+                        </div>
+                        <span className="font-bold text-xs text-slate-900 dark:text-[#F5F7FA]">
+                          ₹{item.price.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-[#22262F]/60">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <StatusBadge
+                            status={
+                              item.returnStatus === 'expiring'
+                                ? 'return-expiring'
+                                : item.returnStatus === 'eligible'
+                                ? 'return-eligible'
+                                : item.returnStatus === 'return_requested'
+                                ? 'return-requested'
+                                : item.returnStatus === 'picked_up'
+                                ? 'refund-overdue'
+                                : 'return-eligible'
+                            }
+                            size="small"
+                          />
+                          {isEligible && (
+                            <span className={`text-[11px] font-semibold ${item.isUrgentReturn || item.returnStatus === 'expiring' ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500'}`}>
+                              {item.deadlineText}
+                            </span>
+                          )}
+                          {isRequested && (
+                            <span className="text-[11px] text-blue-600 dark:text-blue-400 font-medium">
+                              Pickup Scheduled
+                            </span>
+                          )}
+                          {isPickedUp && (
+                            <span className="text-[11px] text-purple-600 dark:text-purple-400 font-medium">
+                              In Transit
                             </span>
                           )}
                         </div>
-                      </TableCell>
-                      <TableCell className="text-slate-600 dark:text-[#A9B0BC]">
-                        {item.merchant}
-                      </TableCell>
-                      <TableCell className="font-medium text-slate-900 dark:text-[#F5F7FA]">
-                        ₹{item.price.toLocaleString('en-IN')}
-                      </TableCell>
-                      <TableCell className="text-slate-500 dark:text-[#A9B0BC]">
-                        {item.deliveryDate}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge
-                          status={
-                            item.returnStatus === 'expiring'
-                              ? 'return-expiring'
-                              : item.returnStatus === 'eligible'
-                              ? 'return-eligible'
-                              : item.returnStatus === 'return_requested'
-                              ? 'return-requested'
-                              : item.returnStatus === 'picked_up'
-                              ? 'refund-overdue'
-                              : 'return-eligible'
-                          }
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {isEligible ? (
-                          <span
-                            className={`font-semibold ${
-                              item.isUrgentReturn || item.returnStatus === 'expiring'
-                                ? 'text-amber-700 dark:text-amber-300'
-                                : 'text-slate-600 dark:text-[#A9B0BC]'
-                            }`}
-                          >
-                            {item.deadlineText}
-                          </span>
-                        ) : isRequested ? (
-                          <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                            Pickup Scheduled
-                          </span>
-                        ) : isPickedUp ? (
-                          <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
-                            Courier in Transit
-                          </span>
-                        ) : (
-                          <span className="text-xs text-slate-400">Closed</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
                         {isEligible ? (
                           <Button
                             variant={item.isUrgentReturn || item.returnStatus === 'expiring' ? 'primary' : 'outline'}
                             size="small"
-                            className="text-xs py-1 px-2.5"
+                            className="text-xs py-1 px-2.5 shrink-0"
                             onClick={() => {
                               setSelectedReturnItem(item);
                               setIsReturnModalOpen(true);
                             }}
                           >
-                            Request Return
+                            Return
                           </Button>
                         ) : (
                           <Button
                             variant="ghost"
                             size="small"
-                            className="text-xs py-1 px-2.5 text-blue-600 dark:text-blue-400"
+                            className="text-xs py-1 px-2 text-blue-600 dark:text-blue-400 shrink-0"
                             onClick={() => navigate('/app/refunds')}
                           >
-                            Track Refund →
+                            Refund →
                           </Button>
                         )}
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                    </div>
                   );
                 })}
-              </TableBody>
-            </Table>
+              </div>
+            </>
           ) : (
             <div className="p-12 text-center text-slate-400 dark:text-[#747C89] text-xs">
               No returns found under this filter.

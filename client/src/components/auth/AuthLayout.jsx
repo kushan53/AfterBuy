@@ -89,7 +89,8 @@ export const AuthLayout = ({ children }) => {
               className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-[#A9B0BC] hover:text-slate-900 dark:hover:text-white transition-colors py-1.5 px-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1A1F2B]"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Home</span>
+              <span className="hidden sm:inline">Back to Home</span>
+              <span className="sm:hidden">Home</span>
             </Link>
           </div>
         </div>

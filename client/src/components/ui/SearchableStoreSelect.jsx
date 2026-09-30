@@ -212,7 +212,7 @@ export const SearchableStoreSelect = ({
 
       {/* Floating Popover Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 min-w-[340px] sm:min-w-[440px] max-w-[500px] w-full sm:w-auto mt-2 z-50 rounded-2xl border border-slate-200/90 dark:border-[#282E39] bg-white/95 dark:bg-[#151820]/95 backdrop-blur-xl shadow-2xl shadow-slate-900/15 dark:shadow-black/70 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute top-full left-0 w-[min(440px,calc(100vw-2rem))] sm:w-[440px] max-w-full min-w-0 mt-2 z-50 rounded-2xl border border-slate-200/90 dark:border-[#282E39] bg-white dark:bg-[#151820] shadow-2xl shadow-slate-900/15 dark:shadow-black/70 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           {/* Top Category Filter Bar */}
           <div className="p-2.5 border-b border-slate-100 dark:border-[#22262F] flex items-center gap-1 overflow-x-auto scrollbar-none">
             {categories.map((cat) => (
@@ -221,7 +221,7 @@ export const SearchableStoreSelect = ({
                 type="button"
                 onClick={() => setSelectedCategory(cat)}
                 className={cn(
-                  "px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all whitespace-nowrap cursor-pointer",
+                  "px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors whitespace-nowrap cursor-pointer",
                   selectedCategory === cat
                     ? "bg-blue-600 text-white shadow-xs"
                     : "text-slate-600 dark:text-[#A9B0BC] hover:bg-slate-100 dark:hover:bg-[#1F2430]"
@@ -238,7 +238,7 @@ export const SearchableStoreSelect = ({
               <button
                 type="button"
                 onClick={() => handleCommitCustom(inputValue)}
-                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-[#1B202C] border border-blue-200 dark:border-blue-800/80 hover:border-blue-400 dark:hover:border-blue-600 transition-all text-left shadow-xs cursor-pointer group"
+                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-[#1B202C] border border-blue-200 dark:border-blue-800/80 hover:border-blue-400 dark:hover:border-blue-600 transition-colors text-left shadow-xs cursor-pointer group"
               >
                 <div className="flex items-center gap-2.5 truncate">
                   <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">

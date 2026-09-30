@@ -147,7 +147,6 @@ export const UnifiedAuthCard = ({ defaultMode = 'login', initialEmail = '' }) =>
     }
 
     setErrors({});
-    setUnregisteredEmail(null);
     setLoading(true);
 
     try {
@@ -159,26 +158,12 @@ export const UnifiedAuthCard = ({ defaultMode = 'login', initialEmail = '' }) =>
       });
       navigate('/app/dashboard');
     } catch (err) {
-      const msg = err.message || '';
-      const isNotFound =
-        err.status === 404 ||
-        err.data?.code === 'USER_NOT_FOUND' ||
-        msg.toLowerCase().includes('no account') ||
-        msg.toLowerCase().includes('user not found');
-
-      const isWrongPass =
-        err.data?.code === 'INCORRECT_PASSWORD' ||
-        msg.toLowerCase().includes('incorrect password');
-
-      if (isNotFound) {
-        // Instagram-style unique resolution: email has no registered account
-        setUnregisteredEmail(email.toLowerCase().trim());
-        setErrors({});
-      } else if (isWrongPass) {
-        setErrors({ password: 'Incorrect password. Please try again or reset it.' });
-      } else {
-        setErrors({ form: msg || 'Invalid email or password. Please try again.' });
-      }
+      // Production-grade SaaS UX & Security Best Practice:
+      // Never expose whether an email address is registered.
+      // Use clean generic form-level error message:
+      setErrors({
+        form: 'Unable to sign in. Check your email and password, or create an account to get started.',
+      });
     } finally {
       setLoading(false);
     }
@@ -530,7 +515,7 @@ export const UnifiedAuthCard = ({ defaultMode = 'login', initialEmail = '' }) =>
   const { title, subtitle } = getHeaderInfo();
 
   return (
-    <div className="w-full bg-white dark:bg-[#121620] rounded-2xl border border-slate-200/80 dark:border-[#222734] shadow-sm dark:shadow-none p-6 sm:p-9 transition-all duration-200">
+    <div className="w-full bg-white dark:bg-[#121620] rounded-2xl border border-slate-200/80 dark:border-[#222734] shadow-sm dark:shadow-none p-5 sm:p-8 md:p-9 transition-colors duration-150">
       
       {/* AB Logo & Header */}
       <div className="flex flex-col items-center text-center mb-6 sm:mb-7">
@@ -547,11 +532,15 @@ export const UnifiedAuthCard = ({ defaultMode = 'login', initialEmail = '' }) =>
         </p>
       </div>
 
-      {/* Form Error Callout Banner */}
+      {/* Single Accessible Form Error Callout Banner */}
       {errors.form && (
-        <div className="mb-5 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2.5">
-          <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
-          <span>{errors.form}</span>
+        <div
+          role="alert"
+          aria-live="polite"
+          className="mb-5 p-3 rounded-xl bg-rose-50/90 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-800 dark:text-rose-200 flex items-start gap-2.5 transition-all duration-200"
+        >
+          <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+          <span className="leading-relaxed font-medium">{errors.form}</span>
         </div>
       )}
 
@@ -561,51 +550,6 @@ export const UnifiedAuthCard = ({ defaultMode = 'login', initialEmail = '' }) =>
       {mode === 'login' && (
         <div className="space-y-4">
           
-          {/* Instagram-Style User Not Found Feedback Banner */}
-          {unregisteredEmail && (
-            <div className="p-4 rounded-xl bg-blue-50/90 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900/70 transition-all duration-200">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/70 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
-                  <UserX className="w-4 h-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                    No account found for this email
-                  </h4>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
-                    There is no AfterBuy account registered with <strong className="text-slate-900 dark:text-white">{unregisteredEmail}</strong>.
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-2 mt-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEmail(unregisteredEmail);
-                        setUnregisteredEmail(null);
-                        switchMode('signup');
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-medium text-xs shadow-xs transition-all cursor-pointer"
-                    >
-                      <span>Create account with this email</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode('find_account');
-                        setUnregisteredEmail(null);
-                      }}
-                      className="px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                    >
-                      Forgot your email?
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             {/* Email Address */}
             <div>
@@ -623,13 +567,13 @@ export const UnifiedAuthCard = ({ defaultMode = 'login', initialEmail = '' }) =>
                   onChange={(e) => {
                     setEmail(e.target.value);
                     if (errors.email) setErrors((prev) => ({ ...prev, email: null }));
-                    if (unregisteredEmail) setUnregisteredEmail(null);
+                    if (errors.form) setErrors((prev) => ({ ...prev, form: null }));
                   }}
                   placeholder="Enter your email"
                   required
                   autoFocus
                   className={`w-full h-12 pl-10 pr-4 rounded-xl border ${
-                    errors.email || unregisteredEmail ? 'border-rose-300 dark:border-rose-700' : 'border-slate-200 dark:border-[#2D333F]'
+                    errors.email ? 'border-rose-300 dark:border-rose-700' : 'border-slate-200 dark:border-[#2D333F]'
                   } bg-slate-50/60 dark:bg-[#0E1117] text-slate-900 dark:text-[#F5F7FA] placeholder-slate-400 text-sm focus:bg-white dark:focus:bg-[#141822] focus:outline-none focus:border-blue-600 dark:focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 transition-all duration-200`}
                 />
               </div>
@@ -656,6 +600,7 @@ export const UnifiedAuthCard = ({ defaultMode = 'login', initialEmail = '' }) =>
                   onChange={(e) => {
                     setPassword(e.target.value);
                     if (errors.password) setErrors((prev) => ({ ...prev, password: null }));
+                    if (errors.form) setErrors((prev) => ({ ...prev, form: null }));
                   }}
                   placeholder="Enter your password"
                   required
@@ -1221,20 +1166,11 @@ export const UnifiedAuthCard = ({ defaultMode = 'login', initialEmail = '' }) =>
           className="space-y-5"
         >
           {/* Target Email Indicator */}
-          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#181D28] border border-slate-200/80 dark:border-[#262D3D] flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-              <span className="text-xs font-semibold text-slate-900 dark:text-[#F5F7FA] truncate">
-                {email}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setMode('forgot')}
-              className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer shrink-0"
-            >
-              Edit
-            </button>
+          <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#181D28] border border-slate-200/80 dark:border-[#262D3D] flex items-center justify-center gap-2">
+            <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+            <span className="text-xs font-semibold text-slate-900 dark:text-[#F5F7FA] truncate">
+              {email}
+            </span>
           </div>
 
           {/* 6 Square OTP Inputs */}

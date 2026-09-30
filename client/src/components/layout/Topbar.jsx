@@ -103,45 +103,46 @@ export const Topbar = ({ onMenuClick, onQuickAddClick }) => {
       <CommandPalette isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
       <header className="fixed top-0 left-0 right-0 lg:left-64 z-20 flex h-16 items-center justify-between border-b border-slate-200/80 dark:border-[#22262F] bg-white/95 dark:bg-[#11141A]/95 backdrop-blur-md px-4 sm:px-6 lg:px-8 transition-colors duration-200">
         {/* Left side: Hamburger (mobile) + Breadcrumb Context */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             type="button"
             onClick={onMenuClick}
-            className="lg:hidden -ml-1 p-2 rounded-lg text-slate-500 dark:text-[#A9B0BC] hover:text-slate-800 dark:hover:text-[#F5F7FA] hover:bg-slate-100 dark:hover:bg-[#1C2028] transition-colors"
+            className="lg:hidden -ml-1 p-2 rounded-lg text-slate-500 dark:text-[#A9B0BC] hover:text-slate-800 dark:hover:text-[#F5F7FA] hover:bg-slate-100 dark:hover:bg-[#1C2028] transition-colors shrink-0"
             aria-label="Open sidebar"
           >
             <Menu className="w-5 h-5" />
           </button>
 
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-xs min-w-0">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 text-slate-500 dark:text-[#A9B0BC] hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors group"
+              className="inline-flex items-center gap-1 text-slate-500 dark:text-[#A9B0BC] hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors group shrink-0"
               title="Back to Homepage"
             >
               <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:-translate-x-0.5 transition-transform shrink-0" />
               <span className="hidden sm:inline">Back to homepage</span>
               <span className="sm:hidden">Home</span>
             </Link>
-            <span className="text-slate-300 dark:text-[#292E38]">/</span>
-            <h1 className="text-sm font-semibold text-slate-900 dark:text-[#F5F7FA] tracking-tight">
+            <span className="text-slate-300 dark:text-[#292E38] shrink-0">/</span>
+            <h1 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-[#F5F7FA] tracking-tight truncate max-w-[110px] sm:max-w-none">
               {currentMeta.title}
             </h1>
           </div>
         </div>
 
         {/* Right side: Search trigger, Quick Action, Theme Switcher, Notifications, User Avatar */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           {/* Search trigger with shortcut badge */}
           <button
             type="button"
-            className="flex items-center gap-1.5 sm:gap-2 rounded-lg border border-slate-200 dark:border-[#292E38] bg-slate-50/70 dark:bg-[#171A21] hover:bg-slate-100/70 dark:hover:bg-[#1C2028] hover:border-slate-300 dark:hover:border-[#383F4D] px-2 sm:px-3 py-1.5 text-xs text-slate-500 dark:text-[#A9B0BC] transition-colors shrink-0 cursor-pointer"
+            className="flex items-center gap-1.5 sm:gap-2 rounded-lg border border-slate-200 dark:border-[#292E38] bg-slate-50/70 dark:bg-[#171A21] hover:bg-slate-100/70 dark:hover:bg-[#1C2028] hover:border-slate-300 dark:hover:border-[#383F4D] p-1.5 sm:px-3 sm:py-1.5 text-xs text-slate-500 dark:text-[#A9B0BC] transition-colors shrink-0 cursor-pointer"
             onClick={() => setSearchOpen(true)}
             aria-label="Search orders"
+            title="Search orders (⌘K)"
           >
             <Search className="w-3.5 h-3.5 text-slate-400 dark:text-[#747C89]" />
             <span className="hidden md:inline">Search orders, items...</span>
-            <span className="md:hidden">Search...</span>
+            <span className="hidden sm:inline md:hidden">Search...</span>
             <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-slate-200 dark:border-[#292E38] bg-white dark:bg-[#11141A] px-1.5 py-0.5 text-[10px] font-medium text-slate-400 dark:text-[#747C89]">
               ⌘K
             </kbd>
@@ -153,7 +154,8 @@ export const Topbar = ({ onMenuClick, onQuickAddClick }) => {
             size="small"
             icon={Plus}
             onClick={onQuickAddClick}
-            className="shadow-xs text-xs px-2.5 sm:px-3 py-1.5 whitespace-nowrap"
+            className="shadow-xs text-xs px-2 sm:px-3 py-1.5 whitespace-nowrap shrink-0"
+            aria-label="Add Purchase"
           >
             <span className="hidden sm:inline">Add Purchase</span>
             <span className="sm:hidden">Add</span>

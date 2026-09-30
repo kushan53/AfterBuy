@@ -19,6 +19,16 @@
             document.documentElement.classList.remove('dark');
           }
         } catch (e) {}
+
+        // Prevent CSS transition thrashing during active browser/inspect window resize
+        var resizeTimer;
+        window.addEventListener('resize', function() {
+          document.documentElement.classList.add('resizing-active');
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(function() {
+            document.documentElement.classList.remove('resizing-active');
+          }, 120);
+        }, { passive: true });
       })();
     </script>
   </head>

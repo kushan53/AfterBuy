@@ -242,7 +242,7 @@ export const AdvancedDatePicker = ({
 
       {/* Luxury Calendar Popover */}
       {isOpen && (
-        <div className="absolute top-full left-0 z-50 mt-2 w-full sm:w-[320px] rounded-2xl border border-slate-200/90 dark:border-[#282E39] bg-white/95 dark:bg-[#151820]/95 backdrop-blur-xl shadow-2xl shadow-slate-900/15 dark:shadow-black/70 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-4 space-y-3">
+        <div className="absolute top-full left-0 z-50 mt-2 w-[min(320px,calc(100vw-2rem))] sm:w-[320px] max-w-full rounded-2xl border border-slate-200/90 dark:border-[#282E39] bg-white dark:bg-[#151820] shadow-2xl shadow-slate-900/15 dark:shadow-black/70 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-4 space-y-3">
           
           {/* Quick Presets Bar */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none border-b border-slate-100 dark:border-[#22262F]">

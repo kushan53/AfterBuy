@@ -352,7 +352,7 @@ export const LandingPage = () => {
           <div className="absolute -inset-1.5 rounded-3xl bg-gradient-to-r from-blue-600/20 via-indigo-600/15 to-emerald-500/15 blur-xl opacity-70 dark:opacity-40 -z-10" />
 
           {/* Main Dashboard Preview Window */}
-          <div className="rounded-2xl border border-slate-200/90 dark:border-white/10 bg-white/95 dark:bg-[#0D1017]/95 backdrop-blur-xl shadow-2xl shadow-slate-900/10 dark:shadow-black/80 overflow-hidden">
+          <div className="rounded-2xl border border-slate-200/90 dark:border-white/10 bg-white dark:bg-[#0D1017] shadow-2xl shadow-slate-900/10 dark:shadow-black/80 overflow-hidden">
             
             {/* Modern macOS / Web App Window Chrome Header */}
             <div className="px-4 sm:px-5 py-3 bg-slate-50/90 dark:bg-[#11141A] border-b border-slate-200/80 dark:border-white/10 flex items-center justify-between gap-4">
@@ -551,7 +551,7 @@ export const LandingPage = () => {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 
                 {/* Card 1: Pending Refunds */}
-                <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#141820] p-4 shadow-xs hover:border-amber-400/40 transition-all">
+                <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#141820] p-4 shadow-xs hover:border-amber-400/40 transition-colors">
                   <div className="flex items-center justify-between text-slate-500 dark:text-[#A9B0BC] text-xs font-medium">
                     <span>Pending Refunds</span>
                     <div className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400">
@@ -572,7 +572,7 @@ export const LandingPage = () => {
                 </div>
 
                 {/* Card 2: Active Return Windows */}
-                <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#141820] p-4 shadow-xs hover:border-blue-400/40 transition-all">
+                <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#141820] p-4 shadow-xs hover:border-blue-400/40 transition-colors">
                   <div className="flex items-center justify-between text-slate-500 dark:text-[#A9B0BC] text-xs font-medium">
                     <span>Active Return Windows</span>
                     <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
@@ -593,7 +593,7 @@ export const LandingPage = () => {
                 </div>
 
                 {/* Card 3: Active Warranties */}
-                <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#141820] p-4 shadow-xs hover:border-emerald-400/40 transition-all">
+                <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#141820] p-4 shadow-xs hover:border-emerald-400/40 transition-colors">
                   <div className="flex items-center justify-between text-slate-500 dark:text-[#A9B0BC] text-xs font-medium">
                     <span>Active Warranties</span>
                     <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
@@ -612,7 +612,7 @@ export const LandingPage = () => {
                 </div>
 
                 {/* Card 4: Total Refunded */}
-                <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#141820] p-4 shadow-xs hover:border-cyan-400/40 transition-all">
+                <div className="rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-[#141820] p-4 shadow-xs hover:border-cyan-400/40 transition-colors">
                   <div className="flex items-center justify-between text-slate-500 dark:text-[#A9B0BC] text-xs font-medium">
                     <span>Total Refunded</span>
                     <div className="p-1.5 rounded-lg bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400">
@@ -726,7 +726,7 @@ export const LandingPage = () => {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-3 sm:gap-4 self-start md:self-center shrink-0">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 self-start md:self-center shrink-0">
                             <StatusBadge status={item.status || 'return-eligible'} size="small" />
                             <Link to={`/app/purchases/${item.id}`}>
                               <Button variant="outline" size="small" className="text-xs py-1.5 px-3">
@@ -779,7 +779,7 @@ export const LandingPage = () => {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-3 sm:gap-4 self-start md:self-center shrink-0">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 self-start md:self-center shrink-0">
                             <div className="hidden lg:flex flex-col items-end gap-1">
                               <div className="text-[10px] text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
@@ -827,7 +827,7 @@ export const LandingPage = () => {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-3 sm:gap-4 self-start md:self-center shrink-0">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 self-start md:self-center shrink-0">
                             <div className="hidden lg:flex flex-col items-end gap-1">
                               <div className="text-[10px] text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1">
                                 3 of 14 Days Passed
@@ -874,7 +874,7 @@ export const LandingPage = () => {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-3 sm:gap-4 self-start md:self-center shrink-0">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-4 self-start md:self-center shrink-0">
                             <span className="text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-900/60">
                               Overdue by 3 Days
                             </span>

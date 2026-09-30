@@ -196,38 +196,100 @@ export const RefundsPage = () => {
         </CardHeader>
         <CardContent className="p-0">
           {filteredRefunds.length > 0 ? (
-            <Table containerClassName="border-0 rounded-none">
-              <TableHeader>
-                <TableRow hoverable={false}>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Merchant</TableHead>
-                  <TableHead>Refund Amount</TableHead>
-                  <TableHead>Expected Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Reason / Notes</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <Table containerClassName="border-0 rounded-none">
+                  <TableHeader>
+                    <TableRow hoverable={false}>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Merchant</TableHead>
+                      <TableHead>Refund Amount</TableHead>
+                      <TableHead>Expected Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Reason / Notes</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRefunds.map((ref) => {
+                      const isSettled = ref.settled || ref.status === 'refund-received';
+                      const isOverdue = ref.isOverdue && !isSettled;
+
+                      return (
+                        <TableRow key={ref.id || ref.purchaseId}>
+                          <TableCell className="font-semibold text-slate-900 dark:text-[#F5F7FA]">
+                            {ref.name}
+                          </TableCell>
+                          <TableCell className="text-slate-600 dark:text-[#A9B0BC]">
+                            {ref.merchant}
+                          </TableCell>
+                          <TableCell className="font-bold text-slate-900 dark:text-[#F5F7FA]">
+                            ₹{ref.amount.toLocaleString('en-IN')}
+                          </TableCell>
+                          <TableCell className="text-slate-500 dark:text-[#A9B0BC]">
+                            {ref.expectedDate || 'Within 5-7 days'}
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge
+                              status={
+                                isSettled
+                                  ? 'refund-received'
+                                  : isOverdue
+                                  ? 'refund-overdue'
+                                  : 'refund-pending'
+                              }
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-500 dark:text-[#A9B0BC]">
+                            {ref.reason || 'Standard merchant return credit'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {isSettled ? (
+                              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center justify-end gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                Deposited
+                              </span>
+                            ) : (
+                              <Button
+                                variant={isOverdue ? 'primary' : 'outline'}
+                                size="small"
+                                className="text-xs py-1 px-2.5"
+                                onClick={() => {
+                                  setSelectedRefund(ref);
+                                  setIsSettleModalOpen(true);
+                                }}
+                              >
+                                Mark Received
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden divide-y divide-slate-100 dark:divide-[#22262F] p-3 space-y-3">
                 {filteredRefunds.map((ref) => {
                   const isSettled = ref.settled || ref.status === 'refund-received';
                   const isOverdue = ref.isOverdue && !isSettled;
 
                   return (
-                    <TableRow key={ref.id || ref.purchaseId}>
-                      <TableCell className="font-semibold text-slate-900 dark:text-[#F5F7FA]">
-                        {ref.name}
-                      </TableCell>
-                      <TableCell className="text-slate-600 dark:text-[#A9B0BC]">
-                        {ref.merchant}
-                      </TableCell>
-                      <TableCell className="font-bold text-slate-900 dark:text-[#F5F7FA]">
-                        ₹{ref.amount.toLocaleString('en-IN')}
-                      </TableCell>
-                      <TableCell className="text-slate-500 dark:text-[#A9B0BC]">
-                        {ref.expectedDate || 'Within 5-7 days'}
-                      </TableCell>
-                      <TableCell>
+                    <div key={ref.id || ref.purchaseId} className="p-3 bg-slate-50/50 dark:bg-[#13161C] rounded-xl border border-slate-100 dark:border-[#22262F] space-y-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h4 className="font-semibold text-xs text-slate-900 dark:text-[#F5F7FA]">{ref.name}</h4>
+                          <span className="text-[11px] text-slate-500 dark:text-[#747C89]">{ref.merchant} • Expected: {ref.expectedDate || '5-7 days'}</span>
+                        </div>
+                        <span className="font-bold text-xs text-slate-900 dark:text-[#F5F7FA]">
+                          ₹{ref.amount.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-[#22262F]/60">
                         <StatusBadge
                           status={
                             isSettled
@@ -238,13 +300,8 @@ export const RefundsPage = () => {
                           }
                           size="small"
                         />
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-500 dark:text-[#A9B0BC]">
-                        {ref.reason || 'Standard merchant return credit'}
-                      </TableCell>
-                      <TableCell className="text-right">
                         {isSettled ? (
-                          <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center justify-end gap-1">
+                          <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             Deposited
                           </span>
@@ -252,7 +309,7 @@ export const RefundsPage = () => {
                           <Button
                             variant={isOverdue ? 'primary' : 'outline'}
                             size="small"
-                            className="text-xs py-1 px-2.5"
+                            className="text-xs py-1 px-2.5 shrink-0"
                             onClick={() => {
                               setSelectedRefund(ref);
                               setIsSettleModalOpen(true);
@@ -261,12 +318,12 @@ export const RefundsPage = () => {
                             Mark Received
                           </Button>
                         )}
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                    </div>
                   );
                 })}
-              </TableBody>
-            </Table>
+              </div>
+            </>
           ) : (
             <div className="p-12 text-center text-slate-400 dark:text-[#747C89] text-xs">
               No refunds found under this category.

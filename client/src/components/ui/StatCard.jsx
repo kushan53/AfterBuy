@@ -24,7 +24,7 @@ export const StatCard = ({
       onClick={onClick}
       className={cn(
         "p-4.5 flex flex-col justify-between",
-        onClick && "cursor-pointer hover:border-slate-300 dark:hover:border-[#383F4D] hover:shadow-xs transition-all",
+        onClick && "cursor-pointer hover:border-slate-300 dark:hover:border-[#383F4D] hover:shadow-xs transition-colors duration-150",
         className
       )}
     >

@@ -7,7 +7,7 @@ export const Card = React.forwardRef(({
   children,
   ...props
 }, ref) => {
-  const baseStyles = "bg-white dark:bg-[#171A21] rounded-xl border transition-all duration-150";
+  const baseStyles = "bg-white dark:bg-[#171A21] rounded-xl border transition-colors duration-150";
 
   const variants = {
     default: "border-slate-200/80 dark:border-[#292E38] shadow-xs",

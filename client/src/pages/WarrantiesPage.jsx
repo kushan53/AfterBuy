@@ -142,90 +142,151 @@ export const WarrantiesPage = () => {
         </CardHeader>
         <CardContent className="p-0">
           {filteredWarranties.length > 0 ? (
-            <Table containerClassName="border-0 rounded-none">
-              <TableHeader>
-                <TableRow hoverable={false}>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Brand / Merchant</TableHead>
-                  <TableHead>Purchased</TableHead>
-                  <TableHead>Coverage Expiry</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Receipt / Invoice</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <Table containerClassName="border-0 rounded-none">
+                  <TableHeader>
+                    <TableRow hoverable={false}>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Brand / Merchant</TableHead>
+                      <TableHead>Purchased</TableHead>
+                      <TableHead>Coverage Expiry</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Receipt / Invoice</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredWarranties.map((item) => {
+                      const isExpiring = item.isWarrantyExpiringSoon || (item.warrantyDaysLeft && item.warrantyDaysLeft < 60);
+
+                      return (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-semibold text-slate-900 dark:text-[#F5F7FA]">
+                            <div className="flex flex-col">
+                              <span>{item.name}</span>
+                              {item.orderId && (
+                                <span className="text-[10px] font-mono text-slate-400 dark:text-[#747C89]">
+                                  Serial/Order: {item.orderId}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-slate-600 dark:text-[#A9B0BC]">
+                            {item.merchant}
+                          </TableCell>
+                          <TableCell className="text-slate-500 dark:text-[#A9B0BC]">
+                            {item.deliveryDate}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-slate-800 dark:text-[#F5F7FA]">
+                                {item.warrantyExpiry || '1 Year Standard'}
+                              </span>
+                              {item.warrantyDaysLeft && (
+                                <span className={`text-[11px] font-semibold ${isExpiring ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'}`}>
+                                  {item.warrantyDaysLeft} days remaining
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge
+                              status={isExpiring ? 'warranty-expiring' : 'warranty-active'}
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {item.hasReceipt ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedDoc(item);
+                                  setIsViewerOpen(true);
+                                }}
+                                className="inline-flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>View Invoice</span>
+                              </button>
+                            ) : (
+                              <span className="text-xs text-slate-400">Missing</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="outline"
+                              size="small"
+                              className="text-xs py-1 px-2.5"
+                              onClick={() => navigate('/app/documents')}
+                            >
+                              View Documents
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden divide-y divide-slate-100 dark:divide-[#22262F] p-3 space-y-3">
                 {filteredWarranties.map((item) => {
                   const isExpiring = item.isWarrantyExpiringSoon || (item.warrantyDaysLeft && item.warrantyDaysLeft < 60);
 
                   return (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-semibold text-slate-900 dark:text-[#F5F7FA]">
-                        <div className="flex flex-col">
-                          <span>{item.name}</span>
-                          {item.orderId && (
-                            <span className="text-[10px] font-mono text-slate-400 dark:text-[#747C89]">
-                              Serial/Order: {item.orderId}
-                            </span>
-                          )}
+                    <div key={item.id} className="p-3 bg-slate-50/50 dark:bg-[#13161C] rounded-xl border border-slate-100 dark:border-[#22262F] space-y-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h4 className="font-semibold text-xs text-slate-900 dark:text-[#F5F7FA]">{item.name}</h4>
+                          <span className="text-[11px] text-slate-500 dark:text-[#747C89]">{item.merchant} • Purchased: {item.deliveryDate}</span>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-slate-600 dark:text-[#A9B0BC]">
-                        {item.merchant}
-                      </TableCell>
-                      <TableCell className="text-slate-500 dark:text-[#A9B0BC]">
-                        {item.deliveryDate}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-slate-800 dark:text-[#F5F7FA]">
-                            {item.warrantyExpiry || '1 Year Standard'}
-                          </span>
-                          {item.warrantyDaysLeft && (
-                            <span className={`text-[11px] font-semibold ${isExpiring ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'}`}>
-                              {item.warrantyDaysLeft} days remaining
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
                         <StatusBadge
                           status={isExpiring ? 'warranty-expiring' : 'warranty-active'}
                           size="small"
                         />
-                      </TableCell>
-                      <TableCell>
-                        {item.hasReceipt ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedDoc(item);
-                              setIsViewerOpen(true);
-                            }}
-                            className="inline-flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer"
+                      </div>
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-[#22262F]/60 text-xs">
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-medium text-slate-800 dark:text-[#F5F7FA]">
+                            {item.warrantyExpiry || '1 Year Standard'}
+                          </span>
+                          {item.warrantyDaysLeft && (
+                            <span className={`text-[10px] font-semibold ${isExpiring ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'}`}>
+                              {item.warrantyDaysLeft} days left
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {item.hasReceipt && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedDoc(item);
+                                setIsViewerOpen(true);
+                              }}
+                              className="text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+                            >
+                              Bill
+                            </button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="small"
+                            className="text-xs py-1 px-2.5"
+                            onClick={() => navigate('/app/documents')}
                           >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>View Invoice</span>
-                          </button>
-                        ) : (
-                          <span className="text-xs text-slate-400">Missing</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="small"
-                          className="text-xs py-1 px-2.5"
-                          onClick={() => navigate('/app/documents')}
-                        >
-                          View Documents
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                            Vault
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   );
                 })}
-              </TableBody>
-            </Table>
+              </div>
+            </>
           ) : (
             <div className="p-12 text-center text-slate-400 dark:text-[#747C89] text-xs">
               No warranty records under this category.

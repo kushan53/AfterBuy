@@ -212,75 +212,127 @@ export const DashboardPage = () => {
             </CardHeader>
             <CardContent className="p-0">
               {approachingReturnItems.length > 0 ? (
-                <Table containerClassName="border-0 rounded-none">
-                  <TableHeader>
-                    <TableRow hoverable={false}>
-                      <TableHead>Product</TableHead>
-                      <TableHead>Merchant</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Delivered</TableHead>
-                      <TableHead>Return Status</TableHead>
-                      <TableHead>Time Remaining</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block">
+                    <Table containerClassName="border-0 rounded-none">
+                      <TableHeader>
+                        <TableRow hoverable={false}>
+                          <TableHead>Product</TableHead>
+                          <TableHead>Merchant</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Delivered</TableHead>
+                          <TableHead>Return Status</TableHead>
+                          <TableHead>Time Remaining</TableHead>
+                          <TableHead className="text-right">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {approachingReturnItems.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell className="font-semibold text-slate-900 dark:text-[#F5F7FA]">
+                              {item.name}
+                            </TableCell>
+                            <TableCell className="text-slate-600 dark:text-[#A9B0BC]">{item.merchant}</TableCell>
+                            <TableCell className="font-medium text-slate-900 dark:text-[#F5F7FA]">
+                              ₹{item.price.toLocaleString('en-IN')}
+                            </TableCell>
+                            <TableCell className="text-slate-500 dark:text-[#A9B0BC]">{item.deliveryDate}</TableCell>
+                            <TableCell>
+                              <StatusBadge
+                                status={
+                                  item.returnStatus === 'expiring'
+                                    ? 'return-expiring'
+                                    : 'return-eligible'
+                                }
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={`font-medium ${
+                                  item.isUrgentReturn || item.returnStatus === 'expiring'
+                                    ? 'text-amber-700 dark:text-amber-300 font-semibold'
+                                    : 'text-slate-600 dark:text-[#A9B0BC]'
+                                }`}
+                              >
+                                {item.deadlineText}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {item.isUrgentReturn || item.returnStatus === 'expiring' ? (
+                                <Button
+                                  variant="primary"
+                                  size="small"
+                                  className="text-xs py-1 px-2.5"
+                                  onClick={() => handleRequestReturn(item)}
+                                >
+                                  Request Return
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="small"
+                                  className="text-xs py-1 px-2.5"
+                                  onClick={() => navigate('/app/purchases')}
+                                >
+                                  View
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Card View (Phone screens: no horizontal scrolling needed) */}
+                  <div className="md:hidden divide-y divide-slate-100 dark:divide-[#22262F] p-3 space-y-3">
                     {approachingReturnItems.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-semibold text-slate-900">
-                          {item.name}
-                        </TableCell>
-                        <TableCell className="text-slate-600">{item.merchant}</TableCell>
-                        <TableCell className="font-medium text-slate-900">
-                          ₹{item.price.toLocaleString('en-IN')}
-                        </TableCell>
-                        <TableCell className="text-slate-500">{item.deliveryDate}</TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            status={
-                              item.returnStatus === 'expiring'
-                                ? 'return-expiring'
-                                : 'return-eligible'
-                            }
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`font-medium ${
-                              item.isUrgentReturn || item.returnStatus === 'expiring'
-                                ? 'text-amber-700 font-semibold'
-                                : 'text-slate-600'
-                            }`}
-                          >
-                            {item.deadlineText}
+                      <div key={item.id} className="p-3 bg-slate-50/50 dark:bg-[#13161C] rounded-xl border border-slate-100 dark:border-[#22262F] space-y-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <h4 className="font-semibold text-xs text-slate-900 dark:text-[#F5F7FA]">{item.name}</h4>
+                            <span className="text-[11px] text-slate-500 dark:text-[#747C89]">{item.merchant} • {item.deliveryDate}</span>
+                          </div>
+                          <span className="font-bold text-xs text-slate-900 dark:text-[#F5F7FA]">
+                            ₹{item.price.toLocaleString('en-IN')}
                           </span>
-                        </TableCell>
-                        <TableCell className="text-right">
+                        </div>
+                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-[#22262F]/60">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <StatusBadge
+                              status={item.returnStatus === 'expiring' ? 'return-expiring' : 'return-eligible'}
+                              size="small"
+                            />
+                            <span className={`text-[11px] font-semibold ${item.isUrgentReturn || item.returnStatus === 'expiring' ? 'text-amber-600 dark:text-amber-400' : 'text-slate-500'}`}>
+                              {item.deadlineText}
+                            </span>
+                          </div>
                           {item.isUrgentReturn || item.returnStatus === 'expiring' ? (
                             <Button
                               variant="primary"
                               size="small"
-                              className="text-xs py-1 px-2.5"
+                              className="text-xs py-1 px-2.5 shrink-0"
                               onClick={() => handleRequestReturn(item)}
                             >
-                              Request Return
+                              Return
                             </Button>
                           ) : (
                             <Button
                               variant="outline"
                               size="small"
-                              className="text-xs py-1 px-2.5"
+                              className="text-xs py-1 px-2.5 shrink-0"
                               onClick={() => navigate('/app/purchases')}
                             >
                               View
                             </Button>
                           )}
-                        </TableCell>
-                      </TableRow>
+                        </div>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                </>
               ) : (
                 <div className="p-8 text-center text-xs text-slate-400">
                   No active return windows approaching deadline.
@@ -304,55 +356,88 @@ export const DashboardPage = () => {
             </CardHeader>
             <CardContent className="p-0">
               {pendingRefundsList.length > 0 ? (
-                <Table containerClassName="border-0 rounded-none">
-                  <TableHeader>
-                    <TableRow hoverable={false}>
-                      <TableHead>Product</TableHead>
-                      <TableHead>Merchant</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Expected Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block">
+                    <Table containerClassName="border-0 rounded-none">
+                      <TableHeader>
+                        <TableRow hoverable={false}>
+                          <TableHead>Product</TableHead>
+                          <TableHead>Merchant</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Expected Date</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {pendingRefundsList.map((ref) => (
+                          <TableRow key={ref.id}>
+                            <TableCell className="font-semibold text-slate-900 dark:text-[#F5F7FA]">
+                              {ref.name}
+                            </TableCell>
+                            <TableCell className="text-slate-600 dark:text-[#A9B0BC]">{ref.merchant}</TableCell>
+                            <TableCell className="font-bold text-slate-900 dark:text-[#F5F7FA]">
+                              ₹{ref.amount.toLocaleString('en-IN')}
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={
+                                  ref.isOverdue && !ref.settled
+                                    ? 'text-rose-600 font-semibold'
+                                    : 'text-slate-600 dark:text-[#A9B0BC]'
+                                }
+                              >
+                                {ref.expectedDate} {ref.isOverdue && !ref.settled && '(Overdue)'}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <StatusBadge status={ref.status} size="small" />
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="small"
+                                className="text-xs py-1 px-2.5"
+                                onClick={() => handleMarkReceived(ref)}
+                              >
+                                Mark Received
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="md:hidden divide-y divide-slate-100 dark:divide-[#22262F] p-3 space-y-3">
                     {pendingRefundsList.map((ref) => (
-                      <TableRow key={ref.id}>
-                        <TableCell className="font-semibold text-slate-900">
-                          {ref.name}
-                        </TableCell>
-                        <TableCell className="text-slate-600">{ref.merchant}</TableCell>
-                        <TableCell className="font-bold text-slate-900">
-                          ₹{ref.amount.toLocaleString('en-IN')}
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={
-                              ref.isOverdue && !ref.settled
-                                ? 'text-rose-600 font-semibold'
-                                : 'text-slate-600'
-                            }
-                          >
-                            {ref.expectedDate} {ref.isOverdue && !ref.settled && '(Overdue)'}
+                      <div key={ref.id} className="p-3 bg-slate-50/50 dark:bg-[#13161C] rounded-xl border border-slate-100 dark:border-[#22262F] space-y-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <h4 className="font-semibold text-xs text-slate-900 dark:text-[#F5F7FA]">{ref.name}</h4>
+                            <span className="text-[11px] text-slate-500 dark:text-[#747C89]">{ref.merchant} • Expected: {ref.expectedDate}</span>
+                          </div>
+                          <span className="font-bold text-xs text-slate-900 dark:text-[#F5F7FA]">
+                            ₹{ref.amount.toLocaleString('en-IN')}
                           </span>
-                        </TableCell>
-                        <TableCell>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-[#22262F]/60">
                           <StatusBadge status={ref.status} size="small" />
-                        </TableCell>
-                        <TableCell className="text-right">
                           <Button
-                            variant="outline"
+                            variant={ref.isOverdue && !ref.settled ? "primary" : "outline"}
                             size="small"
-                            className="text-xs py-1 px-2.5"
+                            className="text-xs py-1 px-2.5 shrink-0"
                             onClick={() => handleMarkReceived(ref)}
                           >
                             Mark Received
                           </Button>
-                        </TableCell>
-                      </TableRow>
+                        </div>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                </>
               ) : (
                 <div className="p-8 text-center text-xs text-slate-400">
                   No pending refunds awaiting settlement.

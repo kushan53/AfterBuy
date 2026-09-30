@@ -37,16 +37,37 @@ const createTransporter = () => {
 
 /**
  * Sends a high-converting, branded HTML OTP email to the user's inbox in real-time.
+ * Dynamically adjusts subject, headers, and message based on the verification context (login vs password reset).
  * First uses the Resend API (production grade), and falls back to Nodemailer SMTP.
  */
-export const sendOtpEmail = async ({ to, name, otp }) => {
+export const sendOtpEmail = async ({ to, name, otp, type = 'password_reset' }) => {
+  let title = 'Password Reset Verification';
+  let message = 'We received a request to reset the password for your AfterBuy account. Please enter the following 6-digit verification code:';
+  let footerNote = 'If you did not request this code, you can safely ignore this email. Your password will remain unchanged.';
+  let subject = `${otp} is your AfterBuy password reset code`;
+  let gradient = 'linear-gradient(135deg, #2563eb, #4f46e5)';
+
+  if (type === 'login' || type === 'signin' || type === 'otp_login') {
+    title = 'Sign-In Verification Code';
+    message = 'We received a request to sign in to your AfterBuy account with a 1-click verification code. Please enter the following 6-digit code:';
+    footerNote = 'If you did not request this sign-in code, you can safely ignore this email. Your account remains completely secure.';
+    subject = `${otp} is your AfterBuy sign-in verification code`;
+    gradient = 'linear-gradient(135deg, #4f46e5, #7c3aed)';
+  } else if (type === 'account_recovery' || type === 'find_account') {
+    title = 'Account Recovery Verification';
+    message = 'We received a request to find or recover your AfterBuy account. Please enter the following 6-digit verification code:';
+    footerNote = 'If you did not initiate this request, you can safely ignore this email.';
+    subject = `${otp} is your AfterBuy account recovery code`;
+    gradient = 'linear-gradient(135deg, #0284c7, #2563eb)';
+  }
+
   const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AfterBuy Verification Code</title>
+  <title>${title} - AfterBuy</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 10px;">
@@ -57,11 +78,11 @@ export const sendOtpEmail = async ({ to, name, otp }) => {
           <!-- Header Branding -->
           <tr>
             <td style="padding: 32px 36px 20px 36px; text-align: center;">
-              <div style="display: inline-block; width: 44px; height: 44px; line-height: 44px; border-radius: 12px; background: linear-gradient(135deg, #2563eb, #4f46e5); color: #ffffff; font-weight: 800; font-size: 16px; letter-spacing: 1px;">
+              <div style="display: inline-block; width: 44px; height: 44px; line-height: 44px; border-radius: 12px; background: ${gradient}; color: #ffffff; font-weight: 800; font-size: 16px; letter-spacing: 1px;">
                 AB
               </div>
               <h2 style="margin: 16px 0 0 0; font-size: 20px; font-weight: 700; color: #0f172a; letter-spacing: -0.5px;">
-                Password Reset Verification
+                ${title}
               </h2>
               <p style="margin: 6px 0 0 0; font-size: 13px; color: #64748b;">
                 Everything after you buy
@@ -83,7 +104,7 @@ export const sendOtpEmail = async ({ to, name, otp }) => {
                 Hello <strong>${name || 'User'}</strong>,
               </p>
               <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 22px; color: #475569;">
-                We received a request to reset the password for your AfterBuy account. Please enter the following 6-digit verification code:
+                ${message}
               </p>
 
               <!-- 6-Digit OTP Box -->
@@ -97,7 +118,7 @@ export const sendOtpEmail = async ({ to, name, otp }) => {
               </div>
 
               <p style="margin: 0 0 12px 0; font-size: 13px; line-height: 20px; color: #64748b;">
-                If you did not request this code, you can safely ignore this email. Your password will remain unchanged.
+                ${footerNote}
               </p>
             </td>
           </tr>
@@ -127,8 +148,8 @@ export const sendOtpEmail = async ({ to, name, otp }) => {
       const info = await transporter.sendMail({
         from: senderAddress,
         to,
-        subject: `${otp} is your AfterBuy verification code`,
-        text: `Your AfterBuy verification code is: ${otp}. It will expire in 10 minutes.`,
+        subject,
+        text: `${title}: Your AfterBuy code is: ${otp}. It will expire in 10 minutes.`,
         html: htmlContent,
       });
 
@@ -153,7 +174,7 @@ export const sendOtpEmail = async ({ to, name, otp }) => {
         body: JSON.stringify({
           from,
           to: [to],
-          subject: `${otp} is your AfterBuy verification code`,
+          subject,
           html: htmlContent,
         }),
       });

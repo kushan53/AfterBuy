@@ -42,7 +42,7 @@ export const Modal = ({
         aria-modal="true"
         aria-labelledby={title ? "modal-title" : undefined}
         className={cn(
-          "relative z-50 w-full max-w-[calc(100vw-2rem)] max-h-[90vh] flex flex-col bg-white dark:bg-[#1C2028] rounded-2xl border border-slate-200 dark:border-[#292E38] shadow-2xl dark:shadow-black/70 overflow-hidden transition-all duration-150 animate-in fade-in zoom-in-95 text-slate-900 dark:text-[#F5F7FA]",
+          "relative z-50 w-full max-w-[calc(100vw-2rem)] max-h-[90vh] flex flex-col bg-white dark:bg-[#1C2028] rounded-2xl border border-slate-200 dark:border-[#292E38] shadow-2xl dark:shadow-black/70 overflow-hidden transition-colors duration-150 animate-in fade-in zoom-in-95 text-slate-900 dark:text-[#F5F7FA]",
           maxWidth,
           className
         )}

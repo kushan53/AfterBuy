@@ -193,9 +193,9 @@ export const InteractivePipelineShowcase = () => {
                     setIsPlaying(false);
                   }}
                   className={cn(
-                    "relative p-4 rounded-xl border transition-all duration-200 cursor-pointer select-none flex flex-col justify-between",
+                    "relative p-4 rounded-xl border transition-[border-color,background-color,box-shadow] duration-150 cursor-pointer select-none flex flex-col justify-between",
                     isActive
-                      ? "bg-white dark:bg-[#151921] border-blue-500/80 dark:border-blue-500 shadow-lg shadow-blue-500/10 ring-2 ring-blue-500/20 scale-[1.02]"
+                      ? "bg-white dark:bg-[#151921] border-blue-500/80 dark:border-blue-500 shadow-lg shadow-blue-500/10 ring-2 ring-blue-500/20"
                       : isPassed
                       ? "bg-white/80 dark:bg-[#13161C]/80 border-slate-200 dark:border-[#22262F] hover:border-slate-300 dark:hover:border-[#2E3542]"
                       : "bg-white/50 dark:bg-[#11141A]/50 border-slate-200/60 dark:border-[#1E232C] opacity-70 hover:opacity-100"
@@ -257,7 +257,7 @@ export const InteractivePipelineShowcase = () => {
           {/* ========================================================================= */}
           {/* LIVE SYSTEM TELEMETRY TERMINAL (ACTIVE STAGE MONITOR) */}
           {/* ========================================================================= */}
-          <div className="relative z-10 rounded-xl border border-blue-100 dark:border-[#22262F] bg-white/95 dark:bg-[#13161C]/95 p-4 sm:p-5 backdrop-blur-sm shadow-xs">
+          <div className="relative z-10 rounded-xl border border-blue-100 dark:border-[#22262F] bg-white dark:bg-[#13161C] p-4 sm:p-5 shadow-xs">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               
               {/* Left Details */}
@@ -316,7 +316,7 @@ export const InteractivePipelineShowcase = () => {
         {/* ========================================================================= */}
         {/* BOTTOM CONTROLLER STEPPER BAR */}
         {/* ========================================================================= */}
-        <div className="border-t border-slate-200/80 dark:border-[#22262F] bg-slate-50/70 dark:bg-[#13161C] grid grid-cols-2 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/80 dark:divide-[#22262F]">
+        <div className="border-t border-slate-200/80 dark:border-[#22262F] bg-slate-50/70 dark:bg-[#13161C] grid grid-cols-1 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/80 dark:divide-[#22262F]">
           {stages.map((stage, idx) => {
             const isActive = activeStep === idx;
             const Icon = stage.icon;
@@ -330,7 +330,7 @@ export const InteractivePipelineShowcase = () => {
                   setIsPlaying(false);
                 }}
                 className={cn(
-                  "p-3 sm:p-3.5 text-left transition-all duration-150 cursor-pointer group flex flex-col justify-between",
+                  "p-3 sm:p-3.5 text-left transition-colors duration-150 cursor-pointer group flex flex-col justify-between",
                   isActive
                     ? "bg-white dark:bg-[#171A21] shadow-inner"
                     : "hover:bg-slate-100/70 dark:hover:bg-[#181C24]"

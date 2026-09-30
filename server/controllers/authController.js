@@ -5,6 +5,17 @@ import { User } from '../models/User.js';
 import { Purchase } from '../models/Purchase.js';
 import { sendOtpEmail } from '../utils/emailService.js';
 import { connectDB, ensureDBConnected } from '../config/db.js';
+import {
+  findLocalUserByEmail,
+  findLocalUserById,
+  saveLocalUser,
+  updateLocalUserPassword,
+  verifyPassword,
+  getLocalUsers,
+  setLocalOtp,
+  verifyLocalOtp,
+  clearLocalOtp,
+} from '../utils/localUserStore.js';
 
 const generateToken = (userOrId, expiresIn = '30d') => {
   let payload;
@@ -32,43 +43,79 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      const isConnected = await ensureDBConnected(3500);
-      if (!isConnected) {
-        return res.status(503).json({
-          success: false,
-          code: 'DATABASE_UNAVAILABLE',
-          message: 'Database connection is temporarily unavailable. Please verify MongoDB Atlas IP whitelist.',
-        });
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // 1. Check if user already exists in DB or local storage
+    let userExists = false;
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const found = await User.findOne({ email: normalizedEmail });
+        if (found) userExists = true;
+      } catch (dbErr) {
+        console.warn('[Register User DB Notice]', dbErr.message);
       }
     }
 
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ success: false, message: 'An account with this email already exists' });
+    if (!userExists) {
+      const localFound = findLocalUserByEmail(normalizedEmail);
+      if (localFound) userExists = true;
     }
 
-    const user = await User.create({
-      name,
-      email,
+    if (userExists) {
+      return res.status(400).json({
+        success: false,
+        message: 'An account with this email already exists. Please sign in.',
+      });
+    }
+
+    let createdUser = null;
+    let safeId = null;
+
+    if (mongoose.connection.readyState === 1) {
+      try {
+        createdUser = await User.create({
+          name: name.trim(),
+          email: normalizedEmail,
+          password,
+          phone: phone || '',
+          city: city || '',
+        });
+        safeId = createdUser._id.toString();
+      } catch (dbErr) {
+        console.warn('[Register User Create Error]', dbErr.message);
+      }
+    }
+
+    if (!safeId) {
+      safeId = crypto.createHash('md5').update(normalizedEmail).digest('hex').substring(0, 24);
+    }
+
+    // Always mirror to persistent local storage with bcrypt hashing
+    await saveLocalUser({
+      id: safeId,
+      name: name.trim(),
+      email: normalizedEmail,
       password,
       phone: phone || '',
       city: city || '',
     });
 
-    const token = generateToken(user);
+    const userObj = {
+      id: safeId,
+      _id: safeId,
+      name: name.trim(),
+      email: normalizedEmail,
+      phone: phone || '',
+      city: city || '',
+      returnPickupAddress: createdUser?.returnPickupAddress || '',
+    };
 
-    res.status(201).json({
+    const token = generateToken(userObj);
+
+    return res.status(201).json({
       success: true,
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        city: user.city,
-        returnPickupAddress: user.returnPickupAddress,
-      },
+      user: userObj,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -87,22 +134,35 @@ export const checkEmail = async (req, res) => {
 
     const normalizedEmail = email.toLowerCase().trim();
     if (mongoose.connection.readyState !== 1) {
-      await ensureDBConnected(2500);
+      await ensureDBConnected(1500);
     }
 
     let exists = false;
     let name = null;
+
+    // Check MongoDB first
     if (mongoose.connection.readyState === 1) {
       try {
         const user = await User.findOne({ email: normalizedEmail });
-        exists = !!user;
-        name = user ? user.name : null;
+        if (user) {
+          exists = true;
+          name = user.name;
+        }
       } catch (dbErr) {
         console.warn('[Check Email] DB query error:', dbErr.message);
       }
     }
 
-    res.json({
+    // Also check local store if not found in DB
+    if (!exists) {
+      const localUser = findLocalUserByEmail(normalizedEmail);
+      if (localUser) {
+        exists = true;
+        name = localUser.name;
+      }
+    }
+
+    return res.json({
       success: true,
       exists,
       name,
@@ -113,7 +173,6 @@ export const checkEmail = async (req, res) => {
 };
 
 // @desc    Login user & get token
-// @desc    Login user & get token
 // @route   POST /api/auth/login
 export const loginUser = async (req, res) => {
   try {
@@ -123,49 +182,91 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide email and password' });
     }
 
-    if (mongoose.connection.readyState !== 1) {
-      const isConnected = await ensureDBConnected(3500);
-      if (!isConnected) {
-        return res.status(503).json({
-          success: false,
-          code: 'DATABASE_UNAVAILABLE',
-          message: 'Database connection is temporarily unavailable. Please verify MongoDB Atlas IP whitelist.',
-        });
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // 1. Try DB lookup if MongoDB is connected
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const user = await User.findOne({ email: normalizedEmail }).select('+password');
+        if (user) {
+          const isMatch = await user.matchPassword(password);
+          if (!isMatch) {
+            return res.status(401).json({
+              success: false,
+              code: 'INCORRECT_PASSWORD',
+              message: 'Incorrect password. Please try again or reset your password.',
+            });
+          }
+
+          // Cache in local store for resilience
+          saveLocalUser({
+            id: user._id.toString(),
+            name: user.name,
+            email: user.email,
+            password: user.password,
+            phone: user.phone || '',
+            city: user.city || '',
+            returnPickupAddress: user.returnPickupAddress || '',
+          });
+
+          const token = generateToken(user);
+
+          return res.status(200).json({
+            success: true,
+            token,
+            user: {
+              id: user._id,
+              name: user.name,
+              email: user.email,
+              phone: user.phone || '',
+              city: user.city || '',
+              returnPickupAddress: user.returnPickupAddress || '',
+            },
+          });
+        }
+      } catch (dbErr) {
+        console.warn('[Login DB Notice]', dbErr.message);
       }
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail }).select('+password');
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        code: 'USER_NOT_FOUND',
-        message: `No account found with this email address`,
+    // 2. Check persistent local store (if DB offline or user created in local fallback)
+    const localUser = findLocalUserByEmail(normalizedEmail);
+    if (localUser) {
+      const isMatch = await verifyPassword(password, localUser.password);
+      if (!isMatch) {
+        return res.status(401).json({
+          success: false,
+          code: 'INCORRECT_PASSWORD',
+          message: 'Incorrect password. Please try again or reset your password.',
+        });
+      }
+
+      const token = generateToken({
+        id: localUser.id || localUser._id,
+        name: localUser.name,
+        email: localUser.email,
+      }, '30d');
+
+      return res.status(200).json({
+        success: true,
+        token,
+        user: {
+          id: localUser.id || localUser._id,
+          name: localUser.name,
+          email: localUser.email,
+          phone: localUser.phone || '',
+          city: localUser.city || '',
+          returnPickupAddress: localUser.returnPickupAddress || '',
+        },
       });
     }
 
-    const isMatch = await user.matchPassword(password);
-    if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        code: 'INCORRECT_PASSWORD',
-        message: 'Incorrect password. Please try again or reset your password.',
-      });
-    }
-
-    const token = generateToken(user);
-
-    res.status(200).json({
-      success: true,
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        city: user.city,
-        returnPickupAddress: user.returnPickupAddress,
-      },
+    // 3. User was NOT found in DB and NOT found in local store!
+    // STRICT RULE: Reject unknown emails with 404. NEVER auto-login unknown accounts.
+    return res.status(404).json({
+      success: false,
+      code: 'USER_NOT_FOUND',
+      message: 'No account found with this email address. Please sign up first.',
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -186,16 +287,33 @@ export const findAccount = async (req, res) => {
     const cleanPhone = cleanQuery.replace(/\D/g, '');
     let user = null;
 
-    if (cleanPhone.length >= 7) {
-      user = await User.findOne({
-        phone: { $regex: cleanPhone.slice(-10), $options: 'i' },
-      });
+    if (mongoose.connection.readyState === 1) {
+      if (cleanPhone.length >= 7) {
+        user = await User.findOne({
+          phone: { $regex: cleanPhone.slice(-10), $options: 'i' },
+        });
+      }
+
+      if (!user) {
+        user = await User.findOne({
+          name: { $regex: cleanQuery, $options: 'i' },
+        });
+      }
     }
 
+    // Fallback search in local store
     if (!user) {
-      user = await User.findOne({
-        name: { $regex: cleanQuery, $options: 'i' },
-      });
+      const localUsers = getLocalUsers();
+      if (cleanPhone.length >= 7) {
+        user = localUsers.find(
+          (u) => u.phone && u.phone.replace(/\D/g, '').includes(cleanPhone.slice(-10))
+        );
+      }
+      if (!user) {
+        user = localUsers.find(
+          (u) => u.name && u.name.toLowerCase().includes(cleanQuery.toLowerCase())
+        );
+      }
     }
 
     if (!user) {
@@ -362,37 +480,54 @@ export const sendLoginOtp = async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    let user = await User.findOne({ email: normalizedEmail });
+    let user = null;
 
-    if (!user) {
-      // Create new user account for OTP login
-      user = new User({
-        name: normalizedEmail.split('@')[0],
-        email: normalizedEmail,
-        provider: 'email_otp',
-      });
+    if (mongoose.connection.readyState === 1) {
+      try {
+        user = await User.findOne({ email: normalizedEmail });
+      } catch (dbErr) {
+        console.warn('[sendLoginOtp DB Notice]', dbErr.message);
+      }
     }
 
-    const otp = user.getLoginOtp();
-    await user.save({ validateBeforeSave: false });
+    let otp = null;
+    let userName = normalizedEmail.split('@')[0];
+
+    if (user) {
+      otp = user.getLoginOtp();
+      userName = user.name;
+      await user.save({ validateBeforeSave: false });
+    } else {
+      let localUser = findLocalUserByEmail(normalizedEmail);
+      if (!localUser) {
+        localUser = await saveLocalUser({
+          name: userName,
+          email: normalizedEmail,
+        });
+      }
+      userName = localUser.name;
+      otp = Math.floor(100000 + Math.random() * 900000).toString();
+      setLocalOtp(normalizedEmail, otp);
+    }
 
     console.log('\n============================================================');
     console.log('⚡ [AFTERBUY OTP LOGIN] 1-DAY SESSION VERIFICATION CODE');
-    console.log(`👤 User:       ${user.name} (${user.email})`);
+    console.log(`👤 User:       ${userName} (${normalizedEmail})`);
     console.log(`🔢 OTP CODE:   ${otp}`);
     console.log('⏰ Valid for:  10 Minutes (Activates 1-Day Session)');
     console.log('============================================================\n');
 
     const emailResult = await sendOtpEmail({
-      to: user.email,
-      name: user.name,
+      to: normalizedEmail,
+      name: userName,
       otp,
+      type: 'login',
     });
 
     res.status(200).json({
       success: true,
-      message: `A 6-digit verification code has been sent to ${user.email}.`,
-      email: user.email,
+      message: `A 6-digit verification code has been sent to ${normalizedEmail}.`,
+      email: normalizedEmail,
       emailSent: emailResult.sent,
       sessionDuration: '1-Day session',
       otp: process.env.NODE_ENV !== 'production' ? otp : undefined,
@@ -414,29 +549,24 @@ export const verifyLoginOtp = async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail });
+    let user = null;
 
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'No account found for this email address' });
+    if (mongoose.connection.readyState === 1) {
+      try {
+        user = await User.findOne({ email: normalizedEmail });
+      } catch (dbErr) {
+        console.warn('[verifyLoginOtp DB Notice]', dbErr.message);
+      }
     }
 
-    if (!user.isValidOtp(otp)) {
-      return res.status(400).json({ success: false, message: 'Incorrect or expired verification code. Please check and try again.' });
-    }
+    let isValid = false;
+    let safeUser = null;
 
-    // Clear all OTPs once verified
-    user.clearAllOtps();
-    await user.save({ validateBeforeSave: false });
-
-    // Generate 1-Day session JWT
-    const token = generateToken(user, '1d');
-
-    res.status(200).json({
-      success: true,
-      message: 'Signed in successfully! Your 1-Day session is now active.',
-      token,
-      sessionDuration: '1-Day session',
-      user: {
+    if (user && user.isValidOtp(otp)) {
+      isValid = true;
+      user.clearAllOtps();
+      await user.save({ validateBeforeSave: false });
+      safeUser = {
         id: user._id,
         name: user.name,
         email: user.email,
@@ -444,7 +574,40 @@ export const verifyLoginOtp = async (req, res) => {
         city: user.city || '',
         avatar: user.avatar || '',
         returnPickupAddress: user.returnPickupAddress || '',
-      },
+      };
+    } else if (verifyLocalOtp(normalizedEmail, otp)) {
+      isValid = true;
+      clearLocalOtp(normalizedEmail);
+      let localUser = findLocalUserByEmail(normalizedEmail);
+      if (!localUser) {
+        localUser = await saveLocalUser({ name: normalizedEmail.split('@')[0], email: normalizedEmail });
+      }
+      safeUser = {
+        id: localUser.id || localUser._id,
+        name: localUser.name,
+        email: localUser.email,
+        phone: localUser.phone || '',
+        city: localUser.city || '',
+        avatar: '',
+        returnPickupAddress: localUser.returnPickupAddress || '',
+      };
+    }
+
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Incorrect or expired verification code. Please check and try again.',
+      });
+    }
+
+    const token = generateToken(safeUser, '1d');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Signed in successfully! Your 1-Day session is now active.',
+      token,
+      sessionDuration: '1-Day session',
+      user: safeUser,
     });
   } catch (error) {
     console.error('verifyLoginOtp error:', error);
@@ -463,36 +626,61 @@ export const forgotPassword = async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail });
+    let user = null;
 
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'No account found with this email address' });
+    if (mongoose.connection.readyState === 1) {
+      try {
+        user = await User.findOne({ email: normalizedEmail });
+      } catch (dbErr) {
+        console.warn('[forgotPassword DB Notice]', dbErr.message);
+      }
     }
 
-    // Generate 6-digit OTP (10-min validity) and reset token
-    const otp = user.getResetPasswordOtp();
-    const resetToken = user.getResetPasswordToken();
-    await user.save({ validateBeforeSave: false });
+    let localUser = null;
+    if (!user) {
+      localUser = findLocalUserByEmail(normalizedEmail);
+    }
 
-    // Output OTP clearly to server terminal for instant verification
+    if (!user && !localUser) {
+      return res.status(404).json({
+        success: false,
+        code: 'USER_NOT_FOUND',
+        message: 'No account found with this email address.',
+      });
+    }
+
+    let otp = null;
+    let resetToken = null;
+    const resolvedName = user?.name || localUser?.name || normalizedEmail.split('@')[0];
+
+    if (user) {
+      otp = user.getResetPasswordOtp();
+      resetToken = user.getResetPasswordToken();
+      await user.save({ validateBeforeSave: false });
+    } else {
+      otp = Math.floor(100000 + Math.random() * 900000).toString();
+      resetToken = crypto.randomBytes(32).toString('hex');
+      setLocalOtp(normalizedEmail, otp);
+    }
+
     console.log('\n============================================================');
     console.log('🔐 [AFTERBUY SECURITY] 6-DIGIT OTP VERIFICATION CODE');
-    console.log(`👤 User:       ${user.name} (${user.email})`);
+    console.log(`👤 User:       ${resolvedName} (${normalizedEmail})`);
     console.log(`🔢 OTP CODE:   ${otp}`);
     console.log('⏰ Valid for:  10 Minutes');
     console.log('============================================================\n');
 
-    // Trigger Realtime Email Dispatch via Nodemailer
     const emailResult = await sendOtpEmail({
-      to: user.email,
-      name: user.name,
+      to: normalizedEmail,
+      name: resolvedName,
       otp,
+      type: 'password_reset',
     });
 
     res.status(200).json({
       success: true,
-      message: `A 6-digit verification code has been sent to ${user.email}.`,
-      email: user.email,
+      message: `A 6-digit verification code has been sent to ${normalizedEmail}.`,
+      email: normalizedEmail,
       emailSent: emailResult.sent,
       otp, // included for seamless development & offline testing
       token: resetToken,
@@ -513,14 +701,28 @@ export const verifyResetOtp = async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail });
+    let isValid = false;
 
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User account not found' });
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const user = await User.findOne({ email: normalizedEmail });
+        if (user && user.isValidOtp(otp)) {
+          isValid = true;
+        }
+      } catch (dbErr) {
+        console.warn('[verifyResetOtp DB Notice]', dbErr.message);
+      }
     }
 
-    if (!user.isValidOtp(otp)) {
-      return res.status(400).json({ success: false, message: 'Incorrect or expired OTP code. Please check and try again.' });
+    if (!isValid && verifyLocalOtp(normalizedEmail, otp)) {
+      isValid = true;
+    }
+
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Incorrect or expired OTP code. Please check and try again.',
+      });
     }
 
     res.status(200).json({
@@ -547,32 +749,27 @@ export const resetPasswordWithOtp = async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail });
+    let user = null;
 
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User account not found' });
+    if (mongoose.connection.readyState === 1) {
+      try {
+        user = await User.findOne({ email: normalizedEmail });
+      } catch (dbErr) {
+        console.warn('[resetPasswordWithOtp DB Notice]', dbErr.message);
+      }
     }
 
-    if (!user.isValidOtp(otp)) {
-      return res.status(400).json({ success: false, message: 'Incorrect or expired OTP code. Please request a new code.' });
-    }
+    let isValid = false;
+    let safeUser = null;
 
-    // Set new password (bcrypt pre-save hook will hash it automatically)
-    user.password = password;
-    user.clearAllOtps();
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
-
-    await user.save();
-
-    // Auto-authenticate user with fresh JWT token
-    const authToken = generateToken(user._id);
-
-    res.status(200).json({
-      success: true,
-      message: 'Password reset successfully! Welcome back to AfterBuy.',
-      token: authToken,
-      user: {
+    if (user && user.isValidOtp(otp)) {
+      isValid = true;
+      user.password = password;
+      user.clearAllOtps();
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save();
+      safeUser = {
         id: user._id,
         name: user.name,
         email: user.email,
@@ -580,7 +777,42 @@ export const resetPasswordWithOtp = async (req, res) => {
         city: user.city || '',
         avatar: user.avatar || '',
         returnPickupAddress: user.returnPickupAddress || '',
-      },
+      };
+    } else if (verifyLocalOtp(normalizedEmail, otp)) {
+      isValid = true;
+      clearLocalOtp(normalizedEmail);
+      let localUser = findLocalUserByEmail(normalizedEmail);
+      if (!localUser) {
+        localUser = await saveLocalUser({ name: normalizedEmail.split('@')[0], email: normalizedEmail, password });
+      }
+      safeUser = {
+        id: localUser.id || localUser._id,
+        name: localUser.name,
+        email: localUser.email,
+        phone: localUser.phone || '',
+        city: localUser.city || '',
+        avatar: '',
+        returnPickupAddress: localUser.returnPickupAddress || '',
+      };
+    }
+
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Incorrect or expired OTP code. Please request a new code.',
+      });
+    }
+
+    // Always update local store with the new password
+    await updateLocalUserPassword(normalizedEmail, password);
+
+    const authToken = generateToken(safeUser);
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successfully! Welcome back to AfterBuy.',
+      token: authToken,
+      user: safeUser,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -627,6 +859,7 @@ export const resetPassword = async (req, res) => {
     user.resetPasswordOtpExpire = undefined;
 
     await user.save();
+    await updateLocalUserPassword(user.email, password);
 
     // Auto-authenticate user with fresh JWT token
     const authToken = generateToken(user._id);

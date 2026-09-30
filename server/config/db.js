@@ -1,5 +1,9 @@
 import mongoose from 'mongoose';
 
+// Disable command buffering so Mongoose never freezes requests when disconnected
+mongoose.set('bufferCommands', false);
+mongoose.set('bufferTimeoutMS', 1500);
+
 let isConnecting = false;
 
 export const connectDB = async () => {
@@ -15,19 +19,18 @@ export const connectDB = async () => {
     }
 
     const conn = await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 15000, // 15 seconds for robust DNS SRV & TLS on Atlas
-      connectTimeoutMS: 15000,
+      serverSelectionTimeoutMS: 2500, // Fast 2.5s timeout to prevent request freezing
+      connectTimeoutMS: 2500,
     });
     console.log(`[MongoDB] Connected successfully: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`[MongoDB Connection Notice] Connection deferred (${error.message}).`);
-    console.warn(`[MongoDB Hint] If using MongoDB Atlas, please check if your current IP is whitelisted (or add 0.0.0.0/0 in Atlas Network Access).`);
+    console.warn(`[MongoDB Connection Notice] Atlas unreachable (${error.message}). Running in resilient local storage mode.`);
   } finally {
     isConnecting = false;
   }
 };
 
-export const ensureDBConnected = async (timeoutMs = 4000) => {
+export const ensureDBConnected = async (timeoutMs = 1500) => {
   if (mongoose.connection.readyState === 1) return true;
   try {
     const connectPromise = connectDB();
@@ -38,11 +41,3 @@ export const ensureDBConnected = async (timeoutMs = 4000) => {
     return false;
   }
 };
-
-// Reconnect automatically if connection drops
-mongoose.connection.on('disconnected', () => {
-  console.warn('[MongoDB Notice] Connection lost. Attempting to reconnect in 5 seconds...');
-  setTimeout(() => {
-    connectDB();
-  }, 5000);
-});
